@@ -7,6 +7,9 @@ import {
   Briefcase,
   FileText,
   CalendarCheck2,
+  GraduationCap,
+  CheckSquare,
+  Wallet,
   BarChart3,
   CalendarClock,
   Settings,
@@ -48,8 +51,18 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "Growth",
+    items: [
+      { href: "/leads/college", label: "College", icon: GraduationCap },
+      { href: "/leads/college/attendance", label: "Attendance", icon: CheckSquare },
+    ],
+  },
+  {
     label: "Life",
-    items: [{ href: "/leads/planner", label: "Planner", icon: CalendarCheck2 }],
+    items: [
+      { href: "/leads/planner", label: "Planner", icon: CalendarCheck2 },
+      { href: "/leads/finance", label: "Finance", icon: Wallet },
+    ],
   },
   {
     label: null,
