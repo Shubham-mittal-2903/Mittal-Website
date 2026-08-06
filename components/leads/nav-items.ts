@@ -6,6 +6,7 @@ import {
   FolderKanban,
   Briefcase,
   FileText,
+  Target,
   CalendarCheck2,
   GraduationCap,
   CheckSquare,
@@ -50,6 +51,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Career",
     items: [
       { href: "/leads/job-tracker", label: "Job Tracker", icon: Briefcase },
+      { href: "/leads/placement-prep", label: "Placement Preparation", icon: Target },
       { href: "/leads/resumes", label: "Resume Manager", icon: FileText },
     ],
   },
