@@ -318,6 +318,8 @@ model Client {
   contracts      Contract[]
   invoices       Invoice[]
   attachments    Attachment[]
+  projects       Project[]
+  transactions   Transaction[]
 }
 
 model Proposal {
@@ -380,6 +382,7 @@ model Invoice {
   updatedAt     DateTime      @updatedAt
 
   attachments   Attachment[]
+  transaction   Transaction?
 }
 
 model DailyReport {
@@ -408,4 +411,423 @@ model AppSettings {
   portfolioLinks      Json? // [{ url, label, useCase }]
   outreachPreferences Json?
   updatedAt           DateTime @updatedAt
+}
+
+// ============================================================
+// MITTAL OS — modules beyond the Leads CRM
+// ============================================================
+
+// ---------- Shared: Projects + Planner tasks ----------
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  description String?       @db.Text
+  status      ProjectStatus @default(PLANNING)
+  clientId    String?
+  client      Client?       @relation(fields: [clientId], references: [id])
+  budget      Decimal?      @db.Decimal(10, 2)
+  startDate   DateTime?
+  dueDate     DateTime?
+  completedAt DateTime?
+  tags        String[]      @default([])
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  tasks       Task[]
+
+  @@index([status])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  SKIPPED
+  BLOCKED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RecurrenceRule {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model Task {
+  id          String         @id @default(cuid())
+  title       String
+  description String?        @db.Text
+  status      TaskStatus     @default(TODO)
+  priority    TaskPriority   @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+  recurrence  RecurrenceRule @default(NONE)
+  listName    String? // free-form bucket, e.g. "Mission August" — null = general planner task
+  projectId   String?
+  project     Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ---------- Job Tracker + Resume Manager ----------
+
+enum JobApplicationStatus {
+  SAVED
+  APPLIED
+  OA
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+model Resume {
+  id         String   @id @default(cuid())
+  name       String
+  version    Int      @default(1)
+  targetRole String?
+  fileUrl    String? // path within Supabase Storage
+  fileName   String?
+  isActive   Boolean  @default(false)
+  notes      String?  @db.Text
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  jobApplications JobApplication[]
+}
+
+model JobApplication {
+  id         String                @id @default(cuid())
+  company    String
+  role       String
+  packageOffered String? // "package" is a reserved-ish word in some tooling, avoid it
+  location   String?
+  jdUrl      String?
+  status     JobApplicationStatus  @default(SAVED)
+  appliedAt  DateTime?
+  resumeId   String?
+  resume     Resume?               @relation(fields: [resumeId], references: [id])
+  notes      String?               @db.Text
+
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  checklist  JobChecklistItem[]
+  rounds     InterviewRound[]
+
+  @@index([status])
+}
+
+model JobChecklistItem {
+  id               String         @id @default(cuid())
+  jobApplicationId String
+  jobApplication   JobApplication @relation(fields: [jobApplicationId], references: [id], onDelete: Cascade)
+  label            String
+  done             Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+}
+
+enum InterviewRoundType {
+  OA
+  TECHNICAL
+  HR
+  MANAGERIAL
+  SYSTEM_DESIGN
+  OTHER
+}
+
+enum InterviewRoundStatus {
+  SCHEDULED
+  COMPLETED
+  PASSED
+  FAILED
+}
+
+model InterviewRound {
+  id               String               @id @default(cuid())
+  jobApplicationId String
+  jobApplication   JobApplication       @relation(fields: [jobApplicationId], references: [id], onDelete: Cascade)
+  type             InterviewRoundType
+  scheduledAt      DateTime?
+  status           InterviewRoundStatus @default(SCHEDULED)
+  notes            String?              @db.Text
+  createdAt        DateTime             @default(now())
+}
+
+// ---------- Placement Preparation ----------
+
+enum PrepTopicStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  BLOCKED
+}
+
+enum TargetScope {
+  DAILY
+  WEEKLY
+}
+
+model PrepRoadmap {
+  id             String    @id @default(cuid())
+  title          String
+  sourceDocument String? // filename this roadmap was extracted from
+  startDate      DateTime?
+  targetDate     DateTime?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  milestones     PrepMilestone[]
+  topics         PrepTopic[]
+  targets        PrepTarget[]
+}
+
+model PrepMilestone {
+  id          String      @id @default(cuid())
+  roadmapId   String
+  roadmap     PrepRoadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  title       String
+  dueDate     DateTime?
+  completedAt DateTime?
+  order       Int         @default(0)
+  createdAt   DateTime    @default(now())
+}
+
+model PrepTopic {
+  id          String          @id @default(cuid())
+  roadmapId   String
+  roadmap     PrepRoadmap     @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  title       String
+  category    String? // "DSA", "Aptitude", "HR", "Technical", ...
+  status      PrepTopicStatus @default(NOT_STARTED)
+  isWeak      Boolean         @default(false)
+  resources   Json? // [{ label, url }]
+  notes       String?         @db.Text
+  order       Int             @default(0)
+  approvedAt  DateTime? // set only on manual approval — status changes are never auto-applied
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([status])
+}
+
+model PrepTarget {
+  id        String       @id @default(cuid())
+  roadmapId String?
+  roadmap   PrepRoadmap? @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  scope     TargetScope
+  date      DateTime     @db.Date // DAILY: the day; WEEKLY: the Monday that starts the week
+  title     String
+  done      Boolean      @default(false)
+  createdAt DateTime     @default(now())
+
+  @@index([scope, date])
+}
+
+// ---------- Learning ----------
+
+enum LearningStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model LearningTopic {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  category      String? // "Frontend", "Backend", "CS Fundamentals", "AI"
+  status        LearningStatus @default(NOT_STARTED)
+  completionPct Int            @default(0)
+  lastRevisedAt DateTime?
+  notes         String?        @db.Text
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  resources     LearningResource[]
+  projects      LearningProject[]
+}
+
+model LearningResource {
+  id        String        @id @default(cuid())
+  topicId   String
+  topic     LearningTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  title     String
+  url       String?
+  type      String? // "video", "article", "course", "docs"
+  completed Boolean       @default(false)
+  createdAt DateTime      @default(now())
+}
+
+model LearningProject {
+  id        String        @id @default(cuid())
+  topicId   String
+  topic     LearningTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  name      String
+  url       String?
+  notes     String?       @db.Text
+  createdAt DateTime      @default(now())
+}
+
+// ---------- College + Attendance ----------
+
+enum AssignmentStatus {
+  PENDING
+  SUBMITTED
+  GRADED
+  OVERDUE
+}
+
+enum AttendanceMark {
+  PRESENT
+  ABSENT
+  CANCELLED
+}
+
+model Subject {
+  id               String   @id @default(cuid())
+  name             String
+  code             String?
+  credits          Int?
+  facultyName      String?
+  totalClasses     Int      @default(0)
+  attendedClasses  Int      @default(0)
+  minAttendancePct Int      @default(75)
+  examDate         DateTime?
+  internalMarks    Decimal? @db.Decimal(5, 2)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  assignments      Assignment[]
+  attendanceLog    AttendanceEntry[]
+}
+
+model Assignment {
+  id        String           @id @default(cuid())
+  subjectId String
+  subject   Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  title     String
+  dueDate   DateTime?
+  status    AssignmentStatus @default(PENDING)
+  grade     String?
+  notes     String?          @db.Text
+  createdAt DateTime         @default(now())
+}
+
+model AttendanceEntry {
+  id        String         @id @default(cuid())
+  subjectId String
+  subject   Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  date      DateTime       @db.Date
+  mark      AttendanceMark
+  createdAt DateTime       @default(now())
+
+  @@unique([subjectId, date])
+}
+
+// ---------- Finance ----------
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model FinanceCategory {
+  id           String            @id @default(cuid())
+  name         String            @unique
+  type         TransactionType
+  createdAt    DateTime          @default(now())
+
+  transactions Transaction[]
+  budgets      Budget[]
+}
+
+model Transaction {
+  id          String           @id @default(cuid())
+  categoryId  String?
+  category    FinanceCategory? @relation(fields: [categoryId], references: [id])
+  type        TransactionType
+  amount      Decimal          @db.Decimal(10, 2)
+  description String?
+  date        DateTime         @db.Date
+  clientId    String?
+  client      Client?          @relation(fields: [clientId], references: [id])
+  invoiceId   String?          @unique
+  invoice     Invoice?         @relation(fields: [invoiceId], references: [id])
+
+  createdAt   DateTime         @default(now())
+
+  @@index([date])
+  @@index([type])
+}
+
+model Budget {
+  id          String          @id @default(cuid())
+  categoryId  String
+  category    FinanceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  month       DateTime        @db.Date // first of month
+  limitAmount Decimal         @db.Decimal(10, 2)
+  createdAt   DateTime        @default(now())
+
+  @@unique([categoryId, month])
+}
+
+// ---------- Knowledge Vault + Documents ----------
+// One model backs both sidebar pages: Documents is VaultItem filtered to real-file types
+// (PDF/DOCX/EXCEL/IMAGE/VIDEO); Knowledge Vault shows everything, including prompts/notes.
+
+enum VaultItemType {
+  PDF
+  DOCX
+  EXCEL
+  IMAGE
+  VIDEO
+  RESEARCH
+  CLAUDE_PROMPT
+  CHATGPT_PROMPT
+  MEETING_NOTES
+  OTHER
+}
+
+model VaultItem {
+  id        String        @id @default(cuid())
+  title     String
+  type      VaultItemType
+  content   String?       @db.Text // full text for prompts/notes/research — searchable
+  fileUrl   String? // Supabase Storage path for real files
+  fileName  String?
+  fileSize  Int?
+  tags      String[]      @default([])
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([type])
 }

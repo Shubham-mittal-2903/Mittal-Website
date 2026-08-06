@@ -13,3 +13,5 @@ next-env.d.ts
 /data/leads.json
 
 /lib/generated/prisma
+
+.vercel

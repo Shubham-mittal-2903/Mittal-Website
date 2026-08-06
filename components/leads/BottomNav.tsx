@@ -3,19 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Search, MoreHorizontal, Building2, BarChart3, CalendarClock, Settings, LogOut } from "lucide-react";
+import { Search, MoreHorizontal, LogOut } from "lucide-react";
 import { NAV_ITEMS } from "./nav-items";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { signOut } from "@/lib/actions/auth";
 
-const PRIMARY = NAV_ITEMS.slice(0, 3); // Dashboard, Leads, Pipeline
-const MORE_LINKS = [
-  { href: "/leads/clients", label: "Clients", icon: Building2 },
-  { href: "/leads/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/leads/daily-reports", label: "Daily Reports", icon: CalendarClock },
-  { href: "/leads/settings", label: "Settings", icon: Settings },
-];
+const PRIMARY = NAV_ITEMS.slice(0, 3); // Dashboard, Leads CRM, Pipeline
+const MORE_LINKS = NAV_ITEMS.slice(3); // everything else, grows automatically as modules ship
 
 export default function BottomNav({ onSearchClick }: { onSearchClick: () => void }) {
   const pathname = usePathname();
