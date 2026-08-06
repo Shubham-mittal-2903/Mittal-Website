@@ -10,6 +10,9 @@ import {
   GraduationCap,
   CheckSquare,
   Wallet,
+  BookOpen,
+  Archive,
+  FolderOpen,
   BarChart3,
   CalendarClock,
   Settings,
@@ -55,6 +58,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/leads/college", label: "College", icon: GraduationCap },
       { href: "/leads/college/attendance", label: "Attendance", icon: CheckSquare },
+      { href: "/leads/learning", label: "Learning", icon: BookOpen },
     ],
   },
   {
@@ -62,6 +66,13 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/leads/planner", label: "Planner", icon: CalendarCheck2 },
       { href: "/leads/finance", label: "Finance", icon: Wallet },
+    ],
+  },
+  {
+    label: "Vault",
+    items: [
+      { href: "/leads/vault", label: "Knowledge Vault", icon: Archive },
+      { href: "/leads/documents", label: "Documents", icon: FolderOpen },
     ],
   },
   {
