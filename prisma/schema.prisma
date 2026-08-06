@@ -1,0 +1,411 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LeadStatus {
+  SOURCED
+  CONTACTED
+  REPLIED
+  DISCOVERY_BOOKED
+  DISCOVERY_DONE
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum LeadNoteType {
+  DISCOVERY
+  PSYCHOLOGY
+  NEXT_ACTIONS
+  PROJECT_STATUS
+  PROPOSAL_NARRATIVE
+  GENERAL
+}
+
+enum FindingType {
+  POSITIVE
+  GAP
+  NOT_VERIFIED
+  ISSUE
+}
+
+enum EmailDraftStatus {
+  DRAFT
+  ACTIVE
+  SUPERSEDED
+  SENT
+}
+
+enum FollowupStatus {
+  SCHEDULED
+  SENT
+  SKIPPED
+  CANCELLED
+}
+
+enum AttachmentCategory {
+  SCREENSHOT
+  AUDIT_REPORT
+  VIDEO
+  CONTRACT
+  INVOICE
+  NOTE
+  OTHER
+}
+
+enum ClientStatus {
+  ACTIVE
+  PAST
+  PAUSED
+}
+
+enum ProposalPackage {
+  LAUNCH
+  PRESENCE
+  GROWTH
+  SIGNATURE
+}
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum ContractStatus {
+  DRAFT
+  SENT
+  SIGNED
+  VOID
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  VOID
+}
+
+model Lead {
+  id             String     @id @default(cuid())
+  leadNumber     Int        @unique
+  legacyId       String?    @unique // e.g. "MA-001", null for app-native leads
+
+  company        String
+  industry       String?
+  website        String?
+  location       String?
+  email          String?
+  phone          String?
+  decisionMaker  String?
+
+  priority       Priority   @default(MEDIUM)
+  status         LeadStatus @default(SOURCED)
+  leadScore      Int?
+  scoreBreakdown Json? // { gapSeverity, businessHealth, reachability, budgetSize, urgency }
+  source         String?
+  tags           String[]   @default([])
+
+  notes          String?    @db.Text
+  auditNotes     String?    @db.Text
+  aiNotes        String?    @db.Text
+  rejectedReason String?
+
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  pipelineEvents PipelineEvent[]
+  leadNotes      LeadNote[]
+  emailDrafts    EmailDraft[]
+  emailHistory   EmailHistoryEntry[]
+  followups      FollowupEntry[]
+  audits         Audit[]
+  attachments    Attachment[]
+  proposals      Proposal[]
+  client         Client?
+
+  @@index([status])
+  @@index([priority])
+}
+
+model PipelineEvent {
+  id             String     @id @default(cuid())
+  legacyRef      String?    @unique
+  leadId         String
+  lead           Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  occurredAt     DateTime
+  stage          LeadStatus
+  rawStageText   String? // preserves original free text when it doesn't map cleanly
+  rawFields      Json? // full key/value snapshot of the source append-block, safety net
+  leadScore      Int?
+  scoreBreakdown Json?
+  priority       Priority?
+  probability    String? // e.g. "Moderate (~25-35%)" — kept as prose, source is editorial
+  nextAction     String?    @db.Text
+  nextActionDate DateTime?
+  notes          String?    @db.Text
+
+  createdAt      DateTime   @default(now())
+
+  @@index([leadId, occurredAt])
+}
+
+model LeadNote {
+  id        String       @id @default(cuid())
+  leadId    String
+  lead      Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  noteType  LeadNoteType
+  body      String       @db.Text
+  updatedAt DateTime     @updatedAt
+
+  @@unique([leadId, noteType])
+}
+
+model EmailDraft {
+  id                         String           @id @default(cuid())
+  legacyRef                  String?          @unique
+  leadId                     String
+  lead                       Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  version                    String // "v1", "v2", "final" — free text, source isn't uniform
+  status                     EmailDraftStatus @default(DRAFT)
+  subjectOptions              String[]         @default([])
+  subjectFinal                String?
+  previewText                 String?
+  body                        String           @db.Text
+  wordCount                   Int?
+  confidenceScore              Int? // 0-10
+  spamRisk                    String?
+  bestSendTimeProspectLocal    String?
+  bestSendTimeIst              String?
+  followupScheduleNotes        String?          @db.Text
+  portfolioLinksUsed           Json? // [{ url, why }]
+  gmailDraftId                 String?
+
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+}
+
+model EmailHistoryEntry {
+  id            String   @id @default(cuid())
+  legacyRef     String?  @unique
+  leadId        String
+  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  date          DateTime
+  subject       String
+  emailVersion  String?
+  status        String
+  opened        Boolean  @default(false)
+  replied       Boolean  @default(false)
+  notes         String?  @db.Text
+  gmailDraftId  String?
+
+  createdAt     DateTime @default(now())
+}
+
+model FollowupEntry {
+  id             String         @id @default(cuid())
+  legacyRef      String?        @unique
+  leadId         String
+  lead           Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  followupNumber Int?
+  channel        String?
+  template       String?
+  scheduledDate  DateTime?
+  sentDate       DateTime?
+  status         FollowupStatus @default(SCHEDULED)
+  notes          String?        @db.Text
+
+  createdAt      DateTime       @default(now())
+}
+
+model Audit {
+  id                       String   @id @default(cuid())
+  leadId                   String
+  lead                     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  performedAt              DateTime
+  performanceScore          Int?
+  performanceScoreRaw       String? // e.g. "76-84", source gave a range not a point value
+  accessibilityScore        Int?
+  bestPracticesScore        Int?
+  seoScore                  Int?
+  powerMapperPagesFlagged    Int?
+  brokenLinks                String[] @default([])
+  browserIssues              String?  @db.Text
+  accessibilityIssues        String?  @db.Text
+  performanceObservations    String?  @db.Text
+  positiveObservations       String?  @db.Text
+  improvementOpportunities   String?  @db.Text
+  rawNotes                   String?  @db.Text // narrative sections that don't map to a clean column
+  source                     String? // "founder-provided", "live inspection", "PageSpeed API"
+  verified                   Boolean  @default(false)
+
+  createdAt                 DateTime @default(now())
+  findings                  AuditFinding[]
+}
+
+model AuditFinding {
+  id          String      @id @default(cuid())
+  auditId     String
+  audit       Audit       @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  type        FindingType
+  category    String?
+  description String      @db.Text
+  createdAt   DateTime    @default(now())
+}
+
+model Attachment {
+  id          String             @id @default(cuid())
+  leadId      String?
+  lead        Lead?              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  clientId    String?
+  client      Client?            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  proposalId  String?
+  proposal    Proposal?          @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  contractId  String?
+  contract    Contract?          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  invoiceId   String?
+  invoice     Invoice?           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  category    AttachmentCategory
+  fileName    String
+  storagePath String // path within the Supabase Storage bucket
+  fileSize    Int?
+  mimeType    String?
+  uploadedAt  DateTime           @default(now())
+}
+
+model Client {
+  id             String       @id @default(cuid())
+  leadId         String?      @unique
+  lead           Lead?        @relation(fields: [leadId], references: [id])
+  name           String
+  company        String?
+  email          String?
+  phone          String?
+  billingAddress String?      @db.Text
+  status         ClientStatus @default(ACTIVE)
+  notes          String?      @db.Text
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  proposals      Proposal[]
+  contracts      Contract[]
+  invoices       Invoice[]
+  attachments    Attachment[]
+}
+
+model Proposal {
+  id         String          @id @default(cuid())
+  leadId     String
+  lead       Lead            @relation(fields: [leadId], references: [id])
+  clientId   String?
+  client     Client?         @relation(fields: [clientId], references: [id])
+
+  package    ProposalPackage
+  priceMin   Decimal?        @db.Decimal(10, 2)
+  priceMax   Decimal?        @db.Decimal(10, 2)
+  currency   String          @default("USD")
+  status     ProposalStatus  @default(DRAFT)
+  content    String?         @db.Text
+  sentAt     DateTime?
+
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  contract   Contract?
+  attachments Attachment[]
+}
+
+model Contract {
+  id         String         @id @default(cuid())
+  clientId   String
+  client     Client         @relation(fields: [clientId], references: [id])
+  proposalId String?        @unique
+  proposal   Proposal?      @relation(fields: [proposalId], references: [id])
+
+  value      Decimal?       @db.Decimal(10, 2)
+  status     ContractStatus @default(DRAFT)
+  signedAt   DateTime?
+
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  invoices   Invoice[]
+  attachments Attachment[]
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id])
+  contractId    String?
+  contract      Contract?     @relation(fields: [contractId], references: [id])
+
+  invoiceNumber String        @unique // "YYYY-MM-DD-[ClientInitials]-[seq]", built in app code
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("USD")
+  status        InvoiceStatus @default(DRAFT)
+  issuedAt      DateTime?
+  dueAt         DateTime?
+  paidAt        DateTime?
+  notes         String?       @db.Text
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  attachments   Attachment[]
+}
+
+model DailyReport {
+  id                   String   @id @default(cuid())
+  date                 DateTime @unique @db.Date
+  isPlanOnly           Boolean  @default(false) // true for a day with only an action plan, no completed report
+
+  whatGotDone          String?  @db.Text
+  wins                 String?  @db.Text
+  mistakes             String?  @db.Text
+  lessonsLearned       String?  @db.Text
+  tomorrowsObjectives  String?  @db.Text
+  priorityTasks        String?  @db.Text
+  expectedNumbers      Json?
+  actualNumbers        Json?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model AppSettings {
+  id                  Int      @id @default(1) // enforced singleton, app always upserts id=1
+  profileName         String   @default("Shubham Mittal")
+  profileEmail        String?
+  emailSignature      String?  @db.Text
+  portfolioLinks      Json? // [{ url, label, useCase }]
+  outreachPreferences Json?
+  updatedAt           DateTime @updatedAt
+}

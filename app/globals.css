@@ -159,6 +159,7 @@ body::after {
     mask-composite: exclude;
     opacity: 0;
     transition: opacity 0.5s ease;
+    pointer-events: none;
   }
   .card-glow:hover::before {
     opacity: 1;
@@ -213,4 +214,36 @@ body::after {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+/* shadcn/ui tokens — scoped to /leads only, dark-only (site default has no light variant here).
+   Values are hand-matched to the existing ink/charcoal/graphite/silver/ivory palette above,
+   not the shadcn registry defaults, so components visually match the rest of the site. */
+[data-leads-theme] {
+  --background: 240 8% 5%;
+  --foreground: 60 9% 96%;
+  --card: 240 7% 9%;
+  --card-foreground: 60 9% 96%;
+  --popover: 240 7% 9%;
+  --popover-foreground: 60 9% 96%;
+  --primary: 60 9% 96%;
+  --primary-foreground: 240 8% 5%;
+  --secondary: 240 7% 15%;
+  --secondary-foreground: 60 9% 96%;
+  --muted: 240 7% 12%;
+  --muted-foreground: 240 6% 60%;
+  --accent: 240 7% 18%;
+  --accent-foreground: 60 9% 96%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 6% 18%;
+  --input: 240 6% 18%;
+  --ring: 240 6% 50%;
+  --radius: 0.75rem;
+}
+[data-leads-theme] * {
+  border-color: hsl(var(--border));
+}
+[data-leads-theme] {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
