@@ -14,6 +14,7 @@ import {
   BookOpen,
   Archive,
   FolderOpen,
+  Bot,
   BarChart3,
   CalendarClock,
   Settings,
@@ -58,9 +59,9 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Growth",
     items: [
+      { href: "/leads/learning", label: "Learning", icon: BookOpen },
       { href: "/leads/college", label: "College", icon: GraduationCap },
       { href: "/leads/college/attendance", label: "Attendance", icon: CheckSquare },
-      { href: "/leads/learning", label: "Learning", icon: BookOpen },
     ],
   },
   {
@@ -80,6 +81,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: null,
     items: [
+      { href: "/leads/ai-assistant", label: "AI Assistant", icon: Bot },
       { href: "/leads/analytics", label: "Analytics", icon: BarChart3 },
       { href: "/leads/daily-reports", label: "Daily Reports", icon: CalendarClock },
       { href: "/leads/settings", label: "Settings", icon: Settings },
