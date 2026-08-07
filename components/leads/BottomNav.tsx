@@ -52,11 +52,11 @@ export default function BottomNav({ onSearchClick }: { onSearchClick: () => void
       </nav>
 
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="pb-8">
+        <SheetContent side="bottom" className="flex max-h-[80vh] flex-col pb-8">
           <SheetHeader>
             <SheetTitle>More</SheetTitle>
           </SheetHeader>
-          <div className="mt-4 flex flex-col gap-1">
+          <div className="mt-4 flex flex-1 flex-col gap-1 overflow-y-auto">
             {MORE_LINKS.map((item) => (
               <Link
                 key={item.href}
