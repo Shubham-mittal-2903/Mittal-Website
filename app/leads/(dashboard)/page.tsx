@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getDashboardStats, getMosOverview } from "@/lib/actions/dashboard";
+import JaydenChat from "@/components/leads/JaydenChat";
 
 function formatCurrency(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "USD" }).format(n);
@@ -61,6 +62,11 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <p className="text-sm text-muted-foreground">MITTAL OS, at a glance — business, career, life.</p>
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Jayden</h2>
+        <JaydenChat height="h-[420px]" />
       </div>
 
       <div>
