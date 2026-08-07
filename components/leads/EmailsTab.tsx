@@ -19,6 +19,8 @@ type EmailDraft = {
   status: string;
   subjectFinal: string | null;
   body: string;
+  bestSendTimeProspectLocal: string | null;
+  bestSendTimeIst: string | null;
 };
 type EmailHistoryEntry = {
   id: string;
@@ -123,6 +125,12 @@ function DraftsSection({ leadId, drafts }: { leadId: string; drafts: EmailDraft[
               </div>
               {d.subjectFinal && <p className="mt-1 text-sm text-muted-foreground">{d.subjectFinal}</p>}
               <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{d.body}</p>
+              {d.bestSendTimeIst && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Best time to send: <span className="text-foreground">{d.bestSendTimeIst}</span>
+                  {d.bestSendTimeProspectLocal && ` (prospect local: ${d.bestSendTimeProspectLocal})`}
+                </p>
+              )}
             </div>
           ))}
         </div>

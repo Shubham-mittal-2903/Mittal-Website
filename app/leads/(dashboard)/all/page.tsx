@@ -36,6 +36,14 @@ export default async function LeadsListPage({
         : {}),
     },
     orderBy: { updatedAt: "desc" },
+    include: {
+      emailDrafts: {
+        where: { bestSendTimeIst: { not: null } },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { bestSendTimeIst: true },
+      },
+    },
   });
 
   return (
@@ -100,6 +108,7 @@ export default async function LeadsListPage({
                 <TableHead>Priority</TableHead>
                 <TableHead>Score</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Best Send Time (IST)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -122,6 +131,7 @@ export default async function LeadsListPage({
                   <TableCell className="text-muted-foreground">{lead.priority}</TableCell>
                   <TableCell className="text-muted-foreground">{lead.leadScore ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{lead.email ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{lead.emailDrafts[0]?.bestSendTimeIst ?? "—"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
