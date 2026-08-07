@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
-import { buildMosContext, MOS_ASSISTANT_SYSTEM_PROMPT } from "@/lib/ai/mos-context";
+import { buildMosContext } from "@/lib/ai/mos-context";
+import { JAYDEN_OS_SYSTEM_PROMPT } from "@/lib/ai/jayden-os-prompt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
     return new Response(
       JSON.stringify({
         ok: false,
-        error: "The AI Assistant isn't configured yet — set ANTHROPIC_API_KEY in .env / Vercel env vars to enable it.",
+        error: "Jayden isn't configured yet — set ANTHROPIC_API_KEY in .env / Vercel env vars to enable it.",
       }),
       { status: 503, headers: { "Content-Type": "application/json" } }
     );
@@ -56,9 +57,9 @@ export async function POST(req: Request) {
     async start(controller) {
       try {
         const llmStream = await client.messages.stream({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 800,
-          system: `${MOS_ASSISTANT_SYSTEM_PROMPT}${context}`,
+          model: "claude-opus-5",
+          max_tokens: 1200,
+          system: `${JAYDEN_OS_SYSTEM_PROMPT}${context}`,
           messages,
         });
 

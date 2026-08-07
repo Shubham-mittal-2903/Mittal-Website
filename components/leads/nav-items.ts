@@ -81,7 +81,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: null,
     items: [
-      { href: "/leads/ai-assistant", label: "AI Assistant", icon: Bot },
+      { href: "/leads/ai-assistant", label: "Jayden", icon: Bot },
       { href: "/leads/analytics", label: "Analytics", icon: BarChart3 },
       { href: "/leads/daily-reports", label: "Daily Reports", icon: CalendarClock },
       { href: "/leads/settings", label: "Settings", icon: Settings },

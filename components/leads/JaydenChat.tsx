@@ -18,7 +18,7 @@ function id() {
   return Math.random().toString(36).slice(2);
 }
 
-export default function AiAssistantChat() {
+export default function JaydenChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -73,7 +73,7 @@ export default function AiAssistantChat() {
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Sparkles size={16} />
-              Ask about anything across MITTAL OS — leads, tasks, attendance, prep, jobs.
+              I'm Jayden — ask me anything across MITTAL OS. Leads, tasks, attendance, prep, jobs, money.
             </div>
             <div className="flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => (
@@ -108,7 +108,7 @@ export default function AiAssistantChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send(input)}
-          placeholder="Ask MITTAL OS…"
+          placeholder="Ask Jayden…"
           className="h-10 flex-1 rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground"
         />
         <Button onClick={() => send(input)} disabled={sending || !input.trim()}>
