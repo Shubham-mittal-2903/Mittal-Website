@@ -80,3 +80,63 @@ export async function getAnalytics() {
 
   return { monthlyTrend, nichePerformance, totalLeads, wonCount, lostCount, winRate, totalRevenue };
 }
+
+export async function getMosAnalytics() {
+  const months = lastNMonthKeys(6);
+  const monthStarts = months.map((k) => {
+    const [y, m] = k.split("-").map(Number);
+    return new Date(y, m - 1, 1);
+  });
+  const rangeStart = monthStarts[0];
+
+  const [transactions, learningTopics, jobApplications, subjects, prepTopics] = await Promise.all([
+    db.transaction.findMany({ where: { date: { gte: rangeStart } }, select: { type: true, amount: true, date: true } }),
+    db.learningTopic.findMany({ select: { category: true, completionPct: true } }),
+    db.jobApplication.findMany({ select: { status: true } }),
+    db.subject.findMany({ select: { name: true, attendedClasses: true, totalClasses: true } }),
+    db.prepTopic.findMany({ select: { status: true } }),
+  ]);
+
+  const financeByMonth = new Map(months.map((m) => [m, { income: 0, expense: 0 }]));
+  for (const t of transactions) {
+    const k = monthKey(t.date);
+    const bucket = financeByMonth.get(k);
+    if (bucket) {
+      if (t.type === "INCOME") bucket.income += Number(t.amount);
+      else bucket.expense += Number(t.amount);
+    }
+  }
+  const financeTrend = months.map((k) => ({
+    month: monthLabel(k),
+    income: financeByMonth.get(k)?.income ?? 0,
+    expense: financeByMonth.get(k)?.expense ?? 0,
+  }));
+
+  const learningByCategory = new Map<string, { total: number; sum: number }>();
+  for (const t of learningTopics) {
+    const cat = t.category || "General";
+    const entry = learningByCategory.get(cat) ?? { total: 0, sum: 0 };
+    entry.total += 1;
+    entry.sum += t.completionPct;
+    learningByCategory.set(cat, entry);
+  }
+  const learningProgress = [...learningByCategory.entries()].map(([category, { total, sum }]) => ({
+    category,
+    avgPct: total > 0 ? Math.round(sum / total) : 0,
+  }));
+
+  const jobStatusCounts = new Map<string, number>();
+  for (const j of jobApplications) jobStatusCounts.set(j.status, (jobStatusCounts.get(j.status) ?? 0) + 1);
+  const jobFunnel = [...jobStatusCounts.entries()].map(([status, count]) => ({ status, count }));
+
+  const attendanceBySubject = subjects.map((s) => ({
+    subject: s.name,
+    pct: s.totalClasses > 0 ? Math.round((s.attendedClasses / s.totalClasses) * 100) : 0,
+  }));
+
+  const prepStatusCounts = new Map<string, number>();
+  for (const t of prepTopics) prepStatusCounts.set(t.status, (prepStatusCounts.get(t.status) ?? 0) + 1);
+  const prepBreakdown = [...prepStatusCounts.entries()].map(([status, count]) => ({ status, count }));
+
+  return { financeTrend, learningProgress, jobFunnel, attendanceBySubject, prepBreakdown };
+}

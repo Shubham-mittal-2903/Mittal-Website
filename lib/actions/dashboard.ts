@@ -77,3 +77,55 @@ export async function getDashboardStats() {
     upcomingFollowups,
   };
 }
+
+// Cross-module snapshot for the rest of MITTAL OS — everything outside the Lead CRM.
+export async function getMosOverview() {
+  const today = startOfToday();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+
+  const [
+    tasksToday,
+    tasksOverdue,
+    subjects,
+    activeProjects,
+    activeJobApplications,
+    prepTopics,
+    weakPrepTopics,
+    learningTopics,
+    monthTransactions,
+  ] = await Promise.all([
+    db.task.count({ where: { status: { in: ["TODO", "IN_PROGRESS"] }, dueDate: { gte: today, lt: tomorrow } } }),
+    db.task.count({ where: { status: { in: ["TODO", "IN_PROGRESS"] }, dueDate: { lt: today } } }),
+    db.subject.findMany({ select: { attendedClasses: true, totalClasses: true, minAttendancePct: true } }),
+    db.project.count({ where: { status: { in: ["PLANNING", "IN_PROGRESS", "REVIEW"] } } }),
+    db.jobApplication.count({ where: { status: { in: ["APPLIED", "OA", "INTERVIEW"] } } }),
+    db.prepTopic.count(),
+    db.prepTopic.count({ where: { isWeak: true } }),
+    db.learningTopic.findMany({ select: { completionPct: true } }),
+    db.transaction.findMany({ where: { date: { gte: monthStart, lt: monthEnd } }, select: { type: true, amount: true } }),
+  ]);
+
+  const prepCompleted = await db.prepTopic.count({ where: { status: "COMPLETED" } });
+  const atRiskSubjects = subjects.filter(
+    (s) => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses) * 100 < s.minAttendancePct
+  ).length;
+  const learningAvgPct =
+    learningTopics.length > 0 ? Math.round(learningTopics.reduce((s, t) => s + t.completionPct, 0) / learningTopics.length) : 0;
+  const income = monthTransactions.filter((t) => t.type === "INCOME").reduce((s, t) => s + Number(t.amount), 0);
+  const expense = monthTransactions.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + Number(t.amount), 0);
+
+  return {
+    tasksToday,
+    tasksOverdue,
+    atRiskSubjects,
+    activeProjects,
+    activeJobApplications,
+    prepCompletionPct: prepTopics > 0 ? Math.round((prepCompleted / prepTopics) * 100) : 0,
+    weakPrepTopics,
+    learningAvgPct,
+    financeNet: income - expense,
+  };
+}

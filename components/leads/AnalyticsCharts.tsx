@@ -70,3 +70,81 @@ export function NicheChart({ data }: { data: NichePerformance[] }) {
     </ResponsiveContainer>
   );
 }
+
+type FinanceTrend = { month: string; income: number; expense: number };
+type LearningProgress = { category: string; avgPct: number };
+type JobFunnel = { status: string; count: number };
+type AttendanceBySubject = { subject: string; pct: number };
+type PrepBreakdown = { status: string; count: number };
+
+export function FinanceTrendChart({ data }: { data: FinanceTrend[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={data} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
+        <CartesianGrid stroke={GRID_COLOR} vertical={false} />
+        <XAxis dataKey="month" stroke={AXIS_COLOR} fontSize={12} />
+        <YAxis stroke={AXIS_COLOR} fontSize={12} />
+        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => `$${v}`} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Bar dataKey="income" name="Income" fill="#C9CDD6" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="expense" name="Expense" fill="#6E7480" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function LearningProgressChart({ data }: { data: LearningProgress[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={Math.max(180, data.length * 36)}>
+      <BarChart data={data} layout="vertical" margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+        <CartesianGrid stroke={GRID_COLOR} horizontal={false} />
+        <XAxis type="number" domain={[0, 100]} stroke={AXIS_COLOR} fontSize={12} allowDecimals={false} />
+        <YAxis type="category" dataKey="category" stroke={AXIS_COLOR} fontSize={12} width={100} />
+        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => `${v}%`} />
+        <Bar dataKey="avgPct" name="Avg. completion" fill="#C9CDD6" radius={[0, 4, 4, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function JobFunnelChart({ data }: { data: JobFunnel[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={data} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
+        <CartesianGrid stroke={GRID_COLOR} vertical={false} />
+        <XAxis dataKey="status" stroke={AXIS_COLOR} fontSize={12} />
+        <YAxis stroke={AXIS_COLOR} fontSize={12} allowDecimals={false} />
+        <Tooltip contentStyle={TOOLTIP_STYLE} />
+        <Bar dataKey="count" name="Applications" fill="#C9CDD6" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function AttendanceChart({ data }: { data: AttendanceBySubject[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={Math.max(180, data.length * 36)}>
+      <BarChart data={data} layout="vertical" margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+        <CartesianGrid stroke={GRID_COLOR} horizontal={false} />
+        <XAxis type="number" domain={[0, 100]} stroke={AXIS_COLOR} fontSize={12} allowDecimals={false} />
+        <YAxis type="category" dataKey="subject" stroke={AXIS_COLOR} fontSize={12} width={100} />
+        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => `${v}%`} />
+        <Bar dataKey="pct" name="Attendance" fill="#C9CDD6" radius={[0, 4, 4, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function PrepBreakdownChart({ data }: { data: PrepBreakdown[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={data} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
+        <CartesianGrid stroke={GRID_COLOR} vertical={false} />
+        <XAxis dataKey="status" stroke={AXIS_COLOR} fontSize={12} />
+        <YAxis stroke={AXIS_COLOR} fontSize={12} allowDecimals={false} />
+        <Tooltip contentStyle={TOOLTIP_STYLE} />
+        <Bar dataKey="count" name="Topics" fill="#C9CDD6" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
