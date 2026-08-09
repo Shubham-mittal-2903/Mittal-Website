@@ -2,10 +2,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { buildMosContext } from "@/lib/ai/mos-context";
 import { JAYDEN_OS_SYSTEM_PROMPT } from "@/lib/ai/jayden-os-prompt";
+import { readRepoFiles, proposeChange } from "@/lib/ai/github-tools";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300; // tool-use turns (GitHub API round-trips) run longer than a plain chat reply
 
 type ChatRole = "user" | "assistant";
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
@@ -44,7 +45,80 @@ function isChatMessage(m: unknown): m is ChatMessage {
   return false;
 }
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // base64 size cap — matches Anthropic's per-image limit headroom
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_TOOL_ROUNDS = 8;
+
+const TOOLS: Anthropic.Tool[] = [
+  {
+    name: "read_repo_files",
+    description:
+      "Read the current contents of one or more files in the mittal-website repo (main branch), or list a directory's contents. Always use this before proposing any change — never write code against a file you haven't actually read.",
+    input_schema: {
+      type: "object",
+      properties: {
+        paths: {
+          type: "array",
+          items: { type: "string" },
+          description: "Repo-relative file or directory paths, e.g. \"app/leads/(dashboard)/planner/page.tsx\" or \"components/leads\"",
+        },
+      },
+      required: ["paths"],
+    },
+  },
+  {
+    name: "propose_change",
+    description:
+      "Create a new branch, commit one or more file changes to it, and open a pull request against main. This NEVER deploys or merges anything — Shubham reviews and merges the PR himself. Refuses .env files, CI/CD config, and anything that looks like a secret.",
+    input_schema: {
+      type: "object",
+      properties: {
+        branchName: { type: "string", description: "short kebab-case branch suffix, e.g. \"add-notes-field\" (gets prefixed with jayden/)" },
+        title: { type: "string", description: "PR title" },
+        description: { type: "string", description: "PR description — plain-language explanation of what changed and why" },
+        files: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { path: { type: "string" }, content: { type: "string" } },
+            required: ["path", "content"],
+          },
+        },
+      },
+      required: ["branchName", "title", "description", "files"],
+    },
+  },
+];
+
+async function runTool(name: string, input: Record<string, unknown>): Promise<string> {
+  try {
+    if (name === "read_repo_files") {
+      const paths = Array.isArray(input.paths) ? (input.paths as string[]) : [];
+      return await readRepoFiles(paths);
+    }
+    if (name === "propose_change") {
+      return await proposeChange({
+        branchName: String(input.branchName ?? "change"),
+        title: String(input.title ?? "Jayden change"),
+        description: String(input.description ?? ""),
+        files: Array.isArray(input.files) ? (input.files as Array<{ path: string; content: string }>) : [],
+      });
+    }
+    return `Unknown tool: ${name}`;
+  } catch (err) {
+    return `Error: ${err instanceof Error ? err.message : "unknown error"}`;
+  }
+}
+
+function statusLineFor(name: string, input: Record<string, unknown>): string {
+  if (name === "read_repo_files") {
+    const paths = Array.isArray(input.paths) ? (input.paths as string[]) : [];
+    return `\n\n_Reading ${paths.map((p) => `\`${p}\``).join(", ")}…_\n\n`;
+  }
+  if (name === "propose_change") {
+    return `\n\n_Opening a pull request — "${String(input.title ?? "")}"…_\n\n`;
+  }
+  return "";
+}
 
 export async function POST(req: Request) {
   // Defense-in-depth — middleware already gates /api/mos-assistant/*, but never trust that alone.
@@ -73,13 +147,13 @@ export async function POST(req: Request) {
   }
 
   const rawMessages = Array.isArray(body.messages) ? body.messages : [];
-  const messages = rawMessages.filter(isChatMessage).slice(-20);
+  const parsed = rawMessages.filter(isChatMessage).slice(-20);
 
-  if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
+  if (parsed.length === 0 || parsed[parsed.length - 1].role !== "user") {
     return new Response(JSON.stringify({ ok: false, error: "Missing user message." }), { status: 400 });
   }
 
-  for (const m of messages) {
+  for (const m of parsed) {
     if (Array.isArray(m.content)) {
       for (const b of m.content) {
         if (b.type === "image" && b.data.length > MAX_IMAGE_BYTES) {
@@ -89,7 +163,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => ({
+  const conversation: Anthropic.MessageParam[] = parsed.map((m) => ({
     role: m.role,
     content:
       typeof m.content === "string"
@@ -103,23 +177,49 @@ export async function POST(req: Request) {
 
   const context = await buildMosContext();
   const client = new Anthropic({ apiKey });
+  const tools = process.env.GITHUB_TOKEN ? TOOLS : undefined;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const llmStream = await client.messages.stream({
-          model: "claude-opus-5",
-          max_tokens: 1200,
-          system: `${JAYDEN_OS_SYSTEM_PROMPT}${context}`,
-          messages: anthropicMessages,
-        });
+        for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+          const llmStream = client.messages.stream({
+            model: "claude-opus-5",
+            max_tokens: 1500,
+            system: `${JAYDEN_OS_SYSTEM_PROMPT}${context}`,
+            messages: conversation,
+            ...(tools ? { tools } : {}),
+          });
 
-        for await (const event of llmStream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            controller.enqueue(encoder.encode(event.delta.text));
+          for await (const event of llmStream) {
+            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+              controller.enqueue(encoder.encode(event.delta.text));
+            }
           }
+
+          const finalMessage = await llmStream.finalMessage();
+
+          if (finalMessage.stop_reason !== "tool_use") {
+            controller.close();
+            return;
+          }
+
+          conversation.push({ role: "assistant", content: finalMessage.content });
+
+          const toolResults: Anthropic.ToolResultBlockParam[] = [];
+          for (const block of finalMessage.content) {
+            if (block.type !== "tool_use") continue;
+            const input = (block.input ?? {}) as Record<string, unknown>;
+            controller.enqueue(encoder.encode(statusLineFor(block.name, input)));
+            const result = await runTool(block.name, input);
+            toolResults.push({ type: "tool_result", tool_use_id: block.id, content: result });
+          }
+
+          conversation.push({ role: "user", content: toolResults });
         }
+
+        controller.enqueue(encoder.encode("\n\n_(Stopped after several tool steps — ask me to continue if needed.)_"));
         controller.close();
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Unknown error";
