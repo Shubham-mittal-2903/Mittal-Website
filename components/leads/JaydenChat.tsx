@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, ImagePlus, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Send, Sparkles, ImagePlus, X, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,21 @@ function renderContent(content: MessageContent) {
 function imagesOf(content: MessageContent): ImageBlock[] {
   if (typeof content === "string") return [];
   return content.filter((b): b is ImageBlock => b.type === "image");
+}
+
+function TypingDots() {
+  return (
+    <div className="flex items-center gap-1 px-1 py-1">
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className="h-1.5 w-1.5 rounded-full bg-current opacity-60"
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { height?: string }) {
@@ -133,74 +149,121 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
   }
 
   return (
-    <div className={cn("card-glow relative z-10 flex min-h-[320px] flex-col", height)}>
+    <div className={cn("card-glow relative z-10 flex min-h-[320px] flex-col overflow-hidden", height)}>
+      <div className="mb-3 flex items-center gap-2 border-b border-border pb-3">
+        <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-accent">
+          <Bot size={14} className="text-accent-foreground" />
+          <motion.span
+            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400"
+            animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+        <span className="text-sm font-medium">Jayden</span>
+        <span className="text-xs text-muted-foreground">· grounded in your live data</span>
+      </div>
+
       <div className="flex-1 space-y-4 overflow-y-auto pr-1">
         {messages.length === 0 && (
-          <div className="space-y-3">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Sparkles size={16} />
-              I'm Jayden — ask me anything across MITTAL OS, or drop in a screenshot to analyze.
+              Ask me anything across MITTAL OS, or drop in a screenshot to analyze.
             </div>
             <div className="flex flex-wrap gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button
+              {SUGGESTIONS.map((s, i) => (
+                <motion.button
                   key={s}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => send(s)}
-                  className="rounded-lg border border-input px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+                  className="rounded-lg border border-input px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 >
                   {s}
-                </button>
+                </motion.button>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
-        {messages.map((m) => (
-          <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-            <div
-              className={cn(
-                "max-w-[80%] space-y-2 whitespace-pre-wrap rounded-lg px-3 py-2 text-sm",
-                m.role === "user" ? "bg-secondary text-secondary-foreground" : "bg-accent text-accent-foreground"
-              )}
-            >
-              {imagesOf(m.content).length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {imagesOf(m.content).map((img, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={i}
-                      src={`data:${img.mediaType};base64,${img.data}`}
-                      alt="Attached"
-                      className="h-16 w-16 rounded-md object-cover"
-                    />
-                  ))}
+        <AnimatePresence initial={false}>
+          {messages.map((m) => {
+            const isAssistant = m.role === "assistant";
+            const isEmptyPending = isAssistant && sending && renderContent(m.content) === "";
+            return (
+              <motion.div
+                key={m.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className={cn("flex", isAssistant ? "justify-start" : "justify-end")}
+              >
+                <div
+                  className={cn(
+                    "max-w-[80%] space-y-2 whitespace-pre-wrap rounded-lg px-3 py-2 text-sm",
+                    isAssistant ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"
+                  )}
+                >
+                  {imagesOf(m.content).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {imagesOf(m.content).map((img, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={i}
+                          src={`data:${img.mediaType};base64,${img.data}`}
+                          alt="Attached"
+                          className="h-16 w-16 rounded-md object-cover"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {isEmptyPending ? <TypingDots /> : renderContent(m.content)}
                 </div>
-              )}
-              {renderContent(m.content) || (sending && m.role === "assistant" ? "…" : "")}
-            </div>
-          </div>
-        ))}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
         <div ref={bottomRef} />
       </div>
 
-      {pendingImages.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
-          {pendingImages.map((img, i) => (
-            <div key={i} className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.previewUrl} alt="" className="h-14 w-14 rounded-md object-cover" />
-              <button
-                onClick={() => removePendingImage(i)}
-                className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"
-              >
-                <X size={10} />
-              </button>
-            </div>
-          ))}
-        </div>
+      <AnimatePresence>
+        {pendingImages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-3 flex flex-wrap gap-2 overflow-hidden border-t border-border pt-3"
+          >
+            {pendingImages.map((img, i) => (
+              <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.previewUrl} alt="" className="h-14 w-14 rounded-md object-cover" />
+                <button
+                  onClick={() => removePendingImage(i)}
+                  className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                >
+                  <X size={10} />
+                </button>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {imageError && (
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-xs text-destructive">
+          {imageError}
+        </motion.p>
       )}
-      {imageError && <p className="mt-2 text-xs text-destructive">{imageError}</p>}
 
-      <div className="mt-4 flex gap-2 border-t border-border pt-4">
+      <div
+        className={cn(
+          "mt-4 flex gap-2 rounded-lg border-t border-border pt-4 transition-shadow",
+          sending && "animate-pulse"
+        )}
+      >
         <input
           ref={fileInputRef}
           type="file"
@@ -209,19 +272,23 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
           className="hidden"
           onChange={(e) => onPickImages(e.target.files)}
         />
-        <Button type="button" variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} title="Attach image">
-          <ImagePlus size={16} />
-        </Button>
+        <motion.div whileTap={{ scale: 0.94 }}>
+          <Button type="button" variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} title="Attach image">
+            <ImagePlus size={16} />
+          </Button>
+        </motion.div>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send(input)}
           placeholder="Ask Jayden…"
-          className="h-10 flex-1 rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground"
+          className="h-10 flex-1 rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground transition-colors focus:border-primary/50 focus:outline-none"
         />
-        <Button onClick={() => send(input)} disabled={sending || (!input.trim() && pendingImages.length === 0)}>
-          <Send size={16} />
-        </Button>
+        <motion.div whileTap={{ scale: 0.94 }}>
+          <Button onClick={() => send(input)} disabled={sending || (!input.trim() && pendingImages.length === 0)}>
+            <Send size={16} />
+          </Button>
+        </motion.div>
       </div>
     </div>
   );
