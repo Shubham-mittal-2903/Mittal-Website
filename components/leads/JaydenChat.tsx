@@ -52,6 +52,39 @@ function imagesOf(content: MessageContent): ImageBlock[] {
   return content.filter((b): b is ImageBlock => b.type === "image");
 }
 
+// The one visual element that actually reads as "AI" rather than "chat widget" — a rotating
+// glow ring, always alive, spinning faster while Jayden is actually thinking/responding.
+function JaydenOrb({ active, size = 36 }: { active: boolean; size?: number }) {
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <motion.div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background:
+            "conic-gradient(from 0deg, hsl(var(--foreground)) 0%, transparent 30%, hsl(var(--muted-foreground)) 55%, transparent 80%, hsl(var(--foreground)) 100%)",
+          filter: "blur(3px)",
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: active ? 2.2 : 7, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div
+        className="absolute inset-0 rounded-full opacity-40"
+        style={{ background: "radial-gradient(circle, hsl(var(--foreground) / 0.5), transparent 70%)" }}
+        animate={{ scale: active ? [1, 1.25, 1] : [1, 1.08, 1], opacity: active ? [0.5, 0.8, 0.5] : [0.3, 0.45, 0.3] }}
+        transition={{ duration: active ? 1.4 : 3.5, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <div className="absolute inset-[3px] flex items-center justify-center rounded-full bg-background">
+        <Bot size={size * 0.42} className="text-foreground" />
+      </div>
+      <motion.span
+        className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400"
+        animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      />
+    </div>
+  );
+}
+
 function TypingDots() {
   return (
     <div className="flex items-center gap-1 px-1 py-1">
@@ -64,6 +97,16 @@ function TypingDots() {
         />
       ))}
     </div>
+  );
+}
+
+function StreamingCursor() {
+  return (
+    <motion.span
+      className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 bg-current"
+      animate={{ opacity: [1, 1, 0, 0] }}
+      transition={{ duration: 0.9, repeat: Infinity, times: [0, 0.5, 0.51, 1] }}
+    />
   );
 }
 
@@ -150,20 +193,26 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
 
   return (
     <div className={cn("card-glow relative z-10 flex min-h-[320px] flex-col overflow-hidden", height)}>
-      <div className="mb-3 flex items-center gap-2 border-b border-border pb-3">
-        <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-accent">
-          <Bot size={14} className="text-accent-foreground" />
-          <motion.span
-            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400"
-            animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
+      {/* Ambient glow — always present, not just on hover, so the panel feels alive at rest */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-[0.07]"
+        style={{ background: "radial-gradient(circle, hsl(var(--foreground)), transparent 70%)" }}
+        animate={{ scale: sending ? [1, 1.15, 1] : [1, 1.05, 1], opacity: sending ? [0.1, 0.16, 0.1] : [0.06, 0.09, 0.06] }}
+        transition={{ duration: sending ? 2.5 : 6, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <div className="relative z-10 mb-3 flex items-center gap-2.5 border-b border-border pb-3">
+        <JaydenOrb active={sending} />
+        <div>
+          <span className="bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-sm font-semibold text-transparent">
+            Jayden
+          </span>
+          <span className="ml-2 text-xs text-muted-foreground">grounded in your live data</span>
         </div>
-        <span className="text-sm font-medium">Jayden</span>
-        <span className="text-xs text-muted-foreground">· grounded in your live data</span>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+      <div className="relative z-10 flex-1 space-y-4 overflow-y-auto pr-1">
         {messages.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -189,9 +238,11 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
           </motion.div>
         )}
         <AnimatePresence initial={false}>
-          {messages.map((m) => {
+          {messages.map((m, idx) => {
             const isAssistant = m.role === "assistant";
-            const isEmptyPending = isAssistant && sending && renderContent(m.content) === "";
+            const text = renderContent(m.content);
+            const isEmptyPending = isAssistant && sending && text === "";
+            const isStreamingNow = isAssistant && sending && idx === messages.length - 1 && text !== "";
             return (
               <motion.div
                 key={m.id}
@@ -199,12 +250,15 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
-                className={cn("flex", isAssistant ? "justify-start" : "justify-end")}
+                className={cn("flex items-end gap-2", isAssistant ? "justify-start" : "justify-end")}
               >
+                {isAssistant && <JaydenOrb active={isStreamingNow || isEmptyPending} size={22} />}
                 <div
                   className={cn(
-                    "max-w-[80%] space-y-2 whitespace-pre-wrap rounded-lg px-3 py-2 text-sm",
-                    isAssistant ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"
+                    "max-w-[75%] space-y-2 whitespace-pre-wrap rounded-lg px-3 py-2 text-sm",
+                    isAssistant
+                      ? "border-l-2 border-foreground/20 bg-accent text-accent-foreground"
+                      : "bg-secondary text-secondary-foreground"
                   )}
                 >
                   {imagesOf(m.content).length > 0 && (
@@ -220,7 +274,14 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
                       ))}
                     </div>
                   )}
-                  {isEmptyPending ? <TypingDots /> : renderContent(m.content)}
+                  {isEmptyPending ? (
+                    <TypingDots />
+                  ) : (
+                    <>
+                      {text}
+                      {isStreamingNow && <StreamingCursor />}
+                    </>
+                  )}
                 </div>
               </motion.div>
             );
@@ -235,7 +296,7 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-3 flex flex-wrap gap-2 overflow-hidden border-t border-border pt-3"
+            className="relative z-10 mt-3 flex flex-wrap gap-2 overflow-hidden border-t border-border pt-3"
           >
             {pendingImages.map((img, i) => (
               <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="relative">
@@ -253,17 +314,12 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
         )}
       </AnimatePresence>
       {imageError && (
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-xs text-destructive">
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-10 mt-2 text-xs text-destructive">
           {imageError}
         </motion.p>
       )}
 
-      <div
-        className={cn(
-          "mt-4 flex gap-2 rounded-lg border-t border-border pt-4 transition-shadow",
-          sending && "animate-pulse"
-        )}
-      >
+      <div className="relative z-10 mt-4 flex gap-2 border-t border-border pt-4">
         <input
           ref={fileInputRef}
           type="file"
@@ -277,13 +333,15 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
             <ImagePlus size={16} />
           </Button>
         </motion.div>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send(input)}
-          placeholder="Ask Jayden…"
-          className="h-10 flex-1 rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground transition-colors focus:border-primary/50 focus:outline-none"
-        />
+        <div className="relative flex-1">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send(input)}
+            placeholder="Ask Jayden…"
+            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground transition-colors focus:border-foreground/40 focus:outline-none focus:ring-1 focus:ring-foreground/20"
+          />
+        </div>
         <motion.div whileTap={{ scale: 0.94 }}>
           <Button onClick={() => send(input)} disabled={sending || (!input.trim() && pendingImages.length === 0)}>
             <Send size={16} />
