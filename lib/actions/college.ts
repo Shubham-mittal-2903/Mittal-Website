@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { subjectSchema, assignmentSchema, type SubjectFormInput, type AssignmentFormInput } from "@/lib/validations/college";
+import { todayDateOnly } from "@/lib/date-utils";
 
 export async function createSubject(input: SubjectFormInput) {
   const data = subjectSchema.parse(input);
@@ -47,8 +48,7 @@ export async function deleteSubject(id: string) {
 }
 
 export async function markAttendance(subjectId: string, mark: "PRESENT" | "ABSENT" | "CANCELLED") {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = todayDateOnly();
 
   await db.$transaction(async (tx) => {
     await tx.attendanceEntry.upsert({

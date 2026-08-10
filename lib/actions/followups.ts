@@ -1,13 +1,8 @@
 import { db } from "@/lib/db";
-
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+import { todayDateOnly } from "@/lib/date-utils";
 
 export async function getFollowupSummary() {
-  const today = startOfToday();
+  const today = todayDateOnly();
 
   const [overdue, upcoming] = await Promise.all([
     db.followupEntry.findMany({

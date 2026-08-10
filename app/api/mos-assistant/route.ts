@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { buildMosContext } from "@/lib/ai/mos-context";
 import { JAYDEN_OS_SYSTEM_PROMPT } from "@/lib/ai/jayden-os-prompt";
 import { readRepoFiles, proposeChange } from "@/lib/ai/github-tools";
+import { markAttendanceBatch, createTaskTool, updateLeadStageTool, logTransactionTool, setPrepTopicStatusTool } from "@/lib/ai/data-tools";
+import type { LeadStatus, TaskPriority, PrepTopicStatus, TransactionType } from "@/lib/generated/prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,7 +50,93 @@ function isChatMessage(m: unknown): m is ChatMessage {
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_TOOL_ROUNDS = 8;
 
-const TOOLS: Anthropic.Tool[] = [
+// Always available (no GITHUB_TOKEN needed) — these operate on the app's own database, the
+// same server actions every /leads page already uses under the hood.
+const DATA_TOOLS: Anthropic.Tool[] = [
+  {
+    name: "mark_attendance",
+    description:
+      "Record attendance for one or more classes — present, absent, or a cancelled class that shouldn't count. Use this whenever Shubham tells you about attendance, including backlogs of several days at once. Subjects are matched by name or code (e.g. \"FREN146\") against existing College subjects — if no match exists yet, a new subject is created automatically so the record is never dropped.",
+    input_schema: {
+      type: "object",
+      properties: {
+        entries: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              subjectName: { type: "string", description: "Subject name or code as Shubham said it" },
+              mark: { type: "string", enum: ["PRESENT", "ABSENT", "CANCELLED"] },
+              date: { type: "string", description: "YYYY-MM-DD, defaults to today if omitted" },
+            },
+            required: ["subjectName", "mark"],
+          },
+        },
+      },
+      required: ["entries"],
+    },
+  },
+  {
+    name: "create_task",
+    description: "Add a task to the Planner.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        dueDate: { type: "string", description: "YYYY-MM-DD, optional" },
+        priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH", "URGENT"] },
+        listName: { type: "string", description: "optional bucket, e.g. \"Mission August\"" },
+      },
+      required: ["title"],
+    },
+  },
+  {
+    name: "update_lead_stage",
+    description: "Move a lead in the CRM to a new pipeline stage — matched by company name.",
+    input_schema: {
+      type: "object",
+      properties: {
+        company: { type: "string" },
+        newStage: {
+          type: "string",
+          enum: ["SOURCED", "CONTACTED", "REPLIED", "DISCOVERY_BOOKED", "DISCOVERY_DONE", "PROPOSAL_SENT", "NEGOTIATION", "WON", "LOST"],
+        },
+        note: { type: "string", description: "optional context for why it moved" },
+      },
+      required: ["company", "newStage"],
+    },
+  },
+  {
+    name: "log_transaction",
+    description: "Log an income or expense transaction in Finance.",
+    input_schema: {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["INCOME", "EXPENSE"] },
+        amount: { type: "number" },
+        description: { type: "string" },
+        date: { type: "string", description: "YYYY-MM-DD, defaults to today" },
+        categoryName: { type: "string", description: "optional — created if it doesn't exist yet" },
+      },
+      required: ["type", "amount"],
+    },
+  },
+  {
+    name: "set_prep_topic_status",
+    description:
+      "Update a Placement Preparation topic's status — this IS the manual approval the app requires, so only call it when Shubham has actually told you the real status, never to guess or auto-complete something.",
+    input_schema: {
+      type: "object",
+      properties: {
+        topicTitle: { type: "string" },
+        status: { type: "string", enum: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "SKIPPED", "BLOCKED"] },
+      },
+      required: ["topicTitle", "status"],
+    },
+  },
+];
+
+const CODE_TOOLS: Anthropic.Tool[] = [
   {
     name: "read_repo_files",
     description:
@@ -91,33 +179,75 @@ const TOOLS: Anthropic.Tool[] = [
 
 async function runTool(name: string, input: Record<string, unknown>): Promise<string> {
   try {
-    if (name === "read_repo_files") {
-      const paths = Array.isArray(input.paths) ? (input.paths as string[]) : [];
-      return await readRepoFiles(paths);
+    switch (name) {
+      case "mark_attendance":
+        return await markAttendanceBatch(
+          Array.isArray(input.entries) ? (input.entries as Array<{ subjectName: string; mark: "PRESENT" | "ABSENT" | "CANCELLED"; date?: string }>) : []
+        );
+      case "create_task":
+        return await createTaskTool({
+          title: String(input.title ?? ""),
+          dueDate: input.dueDate ? String(input.dueDate) : undefined,
+          priority: input.priority as TaskPriority | undefined,
+          listName: input.listName ? String(input.listName) : undefined,
+        });
+      case "update_lead_stage":
+        return await updateLeadStageTool({
+          company: String(input.company ?? ""),
+          newStage: input.newStage as LeadStatus,
+          note: input.note ? String(input.note) : undefined,
+        });
+      case "log_transaction":
+        return await logTransactionTool({
+          type: input.type as TransactionType,
+          amount: Number(input.amount),
+          description: input.description ? String(input.description) : undefined,
+          date: input.date ? String(input.date) : undefined,
+          categoryName: input.categoryName ? String(input.categoryName) : undefined,
+        });
+      case "set_prep_topic_status":
+        return await setPrepTopicStatusTool({
+          topicTitle: String(input.topicTitle ?? ""),
+          status: input.status as PrepTopicStatus,
+        });
+      case "read_repo_files":
+        return await readRepoFiles(Array.isArray(input.paths) ? (input.paths as string[]) : []);
+      case "propose_change":
+        return await proposeChange({
+          branchName: String(input.branchName ?? "change"),
+          title: String(input.title ?? "Jayden change"),
+          description: String(input.description ?? ""),
+          files: Array.isArray(input.files) ? (input.files as Array<{ path: string; content: string }>) : [],
+        });
+      default:
+        return `Unknown tool: ${name}`;
     }
-    if (name === "propose_change") {
-      return await proposeChange({
-        branchName: String(input.branchName ?? "change"),
-        title: String(input.title ?? "Jayden change"),
-        description: String(input.description ?? ""),
-        files: Array.isArray(input.files) ? (input.files as Array<{ path: string; content: string }>) : [],
-      });
-    }
-    return `Unknown tool: ${name}`;
   } catch (err) {
     return `Error: ${err instanceof Error ? err.message : "unknown error"}`;
   }
 }
 
 function statusLineFor(name: string, input: Record<string, unknown>): string {
-  if (name === "read_repo_files") {
-    const paths = Array.isArray(input.paths) ? (input.paths as string[]) : [];
-    return `\n\n_Reading ${paths.map((p) => `\`${p}\``).join(", ")}…_\n\n`;
+  switch (name) {
+    case "mark_attendance":
+      return `\n\n_Recording attendance…_\n\n`;
+    case "create_task":
+      return `\n\n_Adding task "${String(input.title ?? "")}"…_\n\n`;
+    case "update_lead_stage":
+      return `\n\n_Updating ${String(input.company ?? "lead")}…_\n\n`;
+    case "log_transaction":
+      return `\n\n_Logging transaction…_\n\n`;
+    case "set_prep_topic_status":
+      return `\n\n_Updating prep topic…_\n\n`;
+    case "read_repo_files": {
+      const paths = Array.isArray(input.paths) ? (input.paths as string[]) : [];
+      return `\n\n_Reading ${paths.map((p) => `\`${p}\``).join(", ")}…_\n\n`;
+    }
+    case "propose_change":
+      return `\n\n_Opening a pull request — "${String(input.title ?? "")}"…_\n\n`;
+    default:
+      return "";
   }
-  if (name === "propose_change") {
-    return `\n\n_Opening a pull request — "${String(input.title ?? "")}"…_\n\n`;
-  }
-  return "";
 }
 
 export async function POST(req: Request) {
@@ -177,7 +307,7 @@ export async function POST(req: Request) {
 
   const context = await buildMosContext();
   const client = new Anthropic({ apiKey });
-  const tools = process.env.GITHUB_TOKEN ? TOOLS : undefined;
+  const tools = [...DATA_TOOLS, ...(process.env.GITHUB_TOKEN ? CODE_TOOLS : [])];
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -189,7 +319,7 @@ export async function POST(req: Request) {
             max_tokens: 1500,
             system: `${JAYDEN_OS_SYSTEM_PROMPT}${context}`,
             messages: conversation,
-            ...(tools ? { tools } : {}),
+            tools,
           });
 
           for await (const event of llmStream) {

@@ -1,15 +1,7 @@
 import { db } from "@/lib/db";
 import { seedBnpRoadmap } from "@/lib/actions/placement";
 import { MilestoneTimeline, TopicsGrid, TargetsList } from "@/components/leads/PlacementPrepDashboard";
-
-function startOfWeek(d: Date) {
-  const c = new Date(d);
-  const day = c.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // back up to Monday
-  c.setDate(c.getDate() + diff);
-  c.setHours(0, 0, 0, 0);
-  return c;
-}
+import { todayKey, dateOnlyKey, startOfIstWeek } from "@/lib/date-utils";
 
 export default async function PlacementPrepPage() {
   const roadmapId = await seedBnpRoadmap();
@@ -31,11 +23,11 @@ export default async function PlacementPrepPage() {
   const weak = roadmap.topics.filter((t) => t.isWeak).length;
   const completionPct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const today = new Date().toISOString().slice(0, 10);
-  const weekStart = startOfWeek(new Date()).toISOString().slice(0, 10);
+  const today = todayKey();
+  const weekStart = dateOnlyKey(startOfIstWeek());
 
-  const dailyTargets = roadmap.targets.filter((t) => t.scope === "DAILY" && t.date.toISOString().slice(0, 10) === today);
-  const weeklyTargets = roadmap.targets.filter((t) => t.scope === "WEEKLY" && t.date.toISOString().slice(0, 10) === weekStart);
+  const dailyTargets = roadmap.targets.filter((t) => t.scope === "DAILY" && dateOnlyKey(t.date) === today);
+  const weeklyTargets = roadmap.targets.filter((t) => t.scope === "WEEKLY" && dateOnlyKey(t.date) === weekStart);
 
   return (
     <div className="space-y-6">

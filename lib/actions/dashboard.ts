@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import type { LeadStatus } from "@/lib/generated/prisma/enums";
+import { todayDateOnly, addDaysToDateOnly, dateOnly } from "@/lib/date-utils";
 
 const MEETING_STAGES: LeadStatus[] = [
   "DISCOVERY_BOOKED",
@@ -9,14 +10,8 @@ const MEETING_STAGES: LeadStatus[] = [
   "WON",
 ];
 
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
 export async function getDashboardStats() {
-  const today = startOfToday();
+  const today = todayDateOnly();
 
   const [
     todaysLeads,
@@ -80,11 +75,10 @@ export async function getDashboardStats() {
 
 // Cross-module snapshot for the rest of MITTAL OS — everything outside the Lead CRM.
 export async function getMosOverview() {
-  const today = startOfToday();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const today = todayDateOnly();
+  const tomorrow = addDaysToDateOnly(today, 1);
+  const monthStart = dateOnly(today.getUTCFullYear(), today.getUTCMonth(), 1);
+  const monthEnd = dateOnly(today.getUTCFullYear(), today.getUTCMonth() + 1, 1);
 
   const [
     tasksToday,

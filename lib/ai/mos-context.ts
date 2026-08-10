@@ -1,16 +1,14 @@
 import { db } from "@/lib/db";
 import { classesCanMiss } from "@/lib/attendance";
+import { todayDateOnly, addDaysToDateOnly } from "@/lib/date-utils";
 
 // Pulls a compact live snapshot of MITTAL OS's own data so the AI Assistant can answer
 // questions like "what should I study today" or "which lead needs follow-up" grounded in
 // what's actually in the database, not a guess. Deliberately summarized, not a full dump —
 // keeps the prompt small and the model focused on what's actually due/at-risk/pending.
 export async function buildMosContext(): Promise<string> {
-  const now = new Date();
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const weekOut = new Date(today);
-  weekOut.setDate(weekOut.getDate() + 7);
+  const today = todayDateOnly();
+  const weekOut = addDaysToDateOnly(today, 7);
 
   const [
     leadsNeedingFollowup,

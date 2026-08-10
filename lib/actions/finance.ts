@@ -10,6 +10,7 @@ import {
   type TransactionFormInput,
   type BudgetFormInput,
 } from "@/lib/validations/finance";
+import { parseDateOnly, dateOnly } from "@/lib/date-utils";
 
 export async function createCategory(input: CategoryFormInput) {
   const data = categoryFormSchema.parse(input);
@@ -25,7 +26,7 @@ export async function createTransaction(input: TransactionFormInput) {
       amount: data.amount,
       categoryId: data.categoryId || undefined,
       description: data.description || undefined,
-      date: new Date(data.date),
+      date: parseDateOnly(data.date),
     },
   });
   revalidatePath("/leads/finance");
@@ -39,9 +40,10 @@ export async function deleteTransaction(id: string) {
 export async function createBudget(input: BudgetFormInput) {
   const data = budgetSchema.parse(input);
   const [year, month] = data.month.split("-").map(Number);
+  const monthStart = dateOnly(year, month - 1, 1);
   await db.budget.upsert({
-    where: { categoryId_month: { categoryId: data.categoryId, month: new Date(year, month - 1, 1) } },
-    create: { categoryId: data.categoryId, month: new Date(year, month - 1, 1), limitAmount: data.limitAmount },
+    where: { categoryId_month: { categoryId: data.categoryId, month: monthStart } },
+    create: { categoryId: data.categoryId, month: monthStart, limitAmount: data.limitAmount },
     update: { limitAmount: data.limitAmount },
   });
   revalidatePath("/leads/finance");

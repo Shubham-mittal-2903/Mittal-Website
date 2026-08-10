@@ -4,6 +4,7 @@ import FinanceQuickAdd from "@/components/leads/FinanceQuickAdd";
 import FinanceTransactionList from "@/components/leads/FinanceTransactionList";
 import FinanceBudgets from "@/components/leads/FinanceBudgets";
 import { TRANSACTION_TYPES } from "@/lib/validations/finance";
+import { todayDateOnly, dateOnly } from "@/lib/date-utils";
 
 const money = (v: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "USD" }).format(v);
 
@@ -14,11 +15,11 @@ export default async function FinancePage({
 }) {
   const { type, month: monthParam } = await searchParams;
 
-  const now = new Date();
-  const month = monthParam ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const now = todayDateOnly();
+  const month = monthParam ?? `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
   const [year, monthNum] = month.split("-").map(Number);
-  const monthStart = new Date(year, monthNum - 1, 1);
-  const monthEnd = new Date(year, monthNum, 1);
+  const monthStart = dateOnly(year, monthNum - 1, 1);
+  const monthEnd = dateOnly(year, monthNum, 1);
 
   const [categories, transactions, allThisMonth, budgetsRaw] = await Promise.all([
     db.financeCategory.findMany({ orderBy: { name: "asc" } }),
