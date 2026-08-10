@@ -9,6 +9,7 @@ export const subjectFormSchema = z.object({
   credits: z.string().optional(),
   facultyName: z.string().optional(),
   minAttendancePct: z.string().optional(),
+  semesterTotalClasses: z.string().optional(),
   examDate: z.string().optional(),
   internalMarks: z.string().optional(),
 });
@@ -16,6 +17,7 @@ export type SubjectFormInput = z.infer<typeof subjectFormSchema>;
 export const subjectSchema = subjectFormSchema.extend({
   credits: z.coerce.number().int().min(0).optional(),
   minAttendancePct: z.coerce.number().min(0).max(100).optional(),
+  semesterTotalClasses: z.coerce.number().int().min(0).optional(),
   internalMarks: z.coerce.number().min(0).optional(),
 });
 

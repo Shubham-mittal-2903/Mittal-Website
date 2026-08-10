@@ -34,6 +34,7 @@ export default async function SubjectDetailPage({ params }: { params: Promise<{ 
             credits: subject.credits?.toString() ?? "",
             facultyName: subject.facultyName ?? "",
             minAttendancePct: subject.minAttendancePct.toString(),
+            semesterTotalClasses: subject.semesterTotalClasses?.toString() ?? "",
             examDate: subject.examDate ? subject.examDate.toISOString().slice(0, 10) : "",
             internalMarks: subject.internalMarks?.toString() ?? "",
           }}

@@ -152,3 +152,33 @@ export async function setPrepTopicStatusTool(input: { topicTitle: string; status
   });
   return `${topic.title} marked ${input.status}.`;
 }
+
+// General-purpose escape hatch for everything the named tools above don't cover — Shubham
+// wants Jayden to be able to act on any part of the OS, not just the 5 pre-built flows. Goes
+// through Prisma (not raw SQL), so it's schema-validated and injection-safe, but it can still
+// reach every model. updateMany/deleteMany are deliberately excluded: a single wrong `where`
+// there can mutate or wipe an entire table, which is a different order of blast radius than
+// one record. Everything else (single-record create/update/upsert/delete, plus reads) is open.
+const MANAGE_DB_MODELS = [
+  "lead", "pipelineEvent", "leadNote", "emailDraft", "emailHistoryEntry", "followupEntry",
+  "audit", "auditFinding", "attachment", "client", "proposal", "contract", "invoice",
+  "dailyReport", "appSettings", "project", "task", "resume", "jobApplication",
+  "jobChecklistItem", "interviewRound", "prepRoadmap", "prepMilestone", "prepTopic",
+  "prepTarget", "learningTopic", "learningResource", "learningProject", "subject",
+  "assignment", "attendanceEntry", "financeCategory", "transaction", "budget", "vaultItem",
+] as const;
+const MANAGE_DB_OPS = ["findMany", "findFirst", "create", "update", "upsert", "delete", "count"] as const;
+
+export async function manageDatabaseTool(input: { model: string; operation: string; args?: unknown }): Promise<string> {
+  const model = input.model as (typeof MANAGE_DB_MODELS)[number];
+  if (!MANAGE_DB_MODELS.includes(model)) {
+    throw new Error(`Unknown model "${input.model}". Valid models: ${MANAGE_DB_MODELS.join(", ")}`);
+  }
+  const operation = input.operation as (typeof MANAGE_DB_OPS)[number];
+  if (!MANAGE_DB_OPS.includes(operation)) {
+    throw new Error(`Unknown operation "${input.operation}". Valid operations: ${MANAGE_DB_OPS.join(", ")} (updateMany/deleteMany are intentionally not available — do single-record operations in a loop instead).`);
+  }
+  const modelClient = (db as unknown as Record<string, Record<string, (args: unknown) => Promise<unknown>>>)[model];
+  const result = await modelClient[operation](input.args ?? {});
+  return JSON.stringify(result, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2);
+}

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { classesCanMiss } from "@/lib/attendance";
-import { todayDateOnly, addDaysToDateOnly } from "@/lib/date-utils";
+import { todayDateOnly, addDaysToDateOnly, dateOnlyKey } from "@/lib/date-utils";
+import { occursOnDate } from "@/lib/class-schedule";
 
 // Pulls a compact live snapshot of MITTAL OS's own data so the AI Assistant can answer
 // questions like "what should I study today" or "which lead needs follow-up" grounded in
@@ -38,7 +39,17 @@ export async function buildMosContext(): Promise<string> {
       select: { title: true, dueDate: true, priority: true },
       take: 15,
     }),
-    db.subject.findMany({ select: { name: true, attendedClasses: true, totalClasses: true, minAttendancePct: true } }),
+    db.subject.findMany({
+      select: {
+        name: true,
+        code: true,
+        attendedClasses: true,
+        totalClasses: true,
+        minAttendancePct: true,
+        scheduleSlots: true,
+        attendanceLog: { where: { date: today }, select: { id: true } },
+      },
+    }),
     db.jobApplication.findMany({
       where: { status: { in: ["APPLIED", "OA", "INTERVIEW"] } },
       select: { company: true, role: true, status: true },
@@ -59,6 +70,10 @@ export async function buildMosContext(): Promise<string> {
   const atRiskSubjects = subjects
     .filter((s) => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses) * 100 < s.minAttendancePct)
     .map((s) => `${s.name} (can miss ${classesCanMiss(s.attendedClasses, s.totalClasses, s.minAttendancePct)} more before it gets worse)`);
+
+  const todaysUnmarkedClasses = subjects
+    .filter((s) => s.attendanceLog.length === 0 && s.scheduleSlots.some((slot) => occursOnDate(slot, today)))
+    .map((s) => `${s.name}${s.code ? ` (${s.code})` : ""}`);
 
   const lines: string[] = [];
   lines.push(`Today's date: ${today.toISOString().slice(0, 10)}`);
@@ -82,6 +97,12 @@ export async function buildMosContext(): Promise<string> {
   );
 
   lines.push(atRiskSubjects.length ? `Attendance at risk: ${atRiskSubjects.join("; ")}` : "Attendance at risk: none — all subjects above minimum");
+
+  lines.push(
+    todaysUnmarkedClasses.length
+      ? `Today's scheduled classes not yet marked: ${todaysUnmarkedClasses.join(", ")} — proactively ask Shubham which of these he attended if he hasn't already told you today, then call mark_attendance.`
+      : "Today's scheduled classes: none unmarked (either no classes today, or already recorded)."
+  );
 
   lines.push(
     activeJobs.length

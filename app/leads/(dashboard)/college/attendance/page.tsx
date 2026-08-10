@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { AttendanceStat, MarkAttendanceButtons } from "@/components/leads/AttendancePanel";
+import { occursOnDate } from "@/lib/class-schedule";
+import { todayDateOnly } from "@/lib/date-utils";
 
 export default async function AttendanceDashboardPage() {
-  const subjects = await db.subject.findMany({ orderBy: { name: "asc" } });
+  const subjects = await db.subject.findMany({ orderBy: { name: "asc" }, include: { scheduleSlots: true } });
 
   const overallAttended = subjects.reduce((sum, s) => sum + s.attendedClasses, 0);
   const overallTotal = subjects.reduce((sum, s) => sum + s.totalClasses, 0);
   const overallPct = overallTotal > 0 ? (overallAttended / overallTotal) * 100 : 0;
   const atRisk = subjects.filter((s) => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses) * 100 < s.minAttendancePct);
+
+  const today = todayDateOnly();
+  const todaysSubjects = subjects.filter((s) => s.scheduleSlots.some((slot) => occursOnDate(slot, today)));
 
   return (
     <div className="space-y-6">
@@ -18,6 +23,21 @@ export default async function AttendanceDashboardPage() {
           {overallPct.toFixed(1)}% overall · {atRisk.length} subject{atRisk.length === 1 ? "" : "s"} below target
         </p>
       </div>
+
+      {todaysSubjects.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground">Today&apos;s classes — mark them off</h2>
+          {todaysSubjects.map((s) => (
+            <div key={s.id} className="card-glow relative z-10 flex flex-wrap items-center justify-between gap-4">
+              <div className="font-medium">
+                {s.name}
+                {s.code ? ` (${s.code})` : ""}
+              </div>
+              <MarkAttendanceButtons subjectId={s.id} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {subjects.length === 0 ? (
         <div className="card-glow relative z-10 py-16 text-center text-sm text-muted-foreground">

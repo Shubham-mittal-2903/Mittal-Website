@@ -719,6 +719,7 @@ model Subject {
   totalClasses     Int      @default(0)
   attendedClasses  Int      @default(0)
   minAttendancePct Int      @default(75)
+  semesterTotalClasses Int? // planned total classes for the whole semester, distinct from totalClasses (classes held so far) — used to project remaining-classes attendance
   examDate         DateTime?
   internalMarks    Decimal? @db.Decimal(5, 2)
 
@@ -727,6 +728,28 @@ model Subject {
 
   assignments      Assignment[]
   attendanceLog    AttendanceEntry[]
+  scheduleSlots    ClassSchedule[]
+}
+
+// The recurring weekly timetable (from Amizone), separate from AttendanceEntry (the actual
+// per-day present/absent log). Used to know which classes are expected on a given date so
+// Jayden/the attendance page can ask "how did today's classes go" instead of the user having
+// to name every subject from memory each time.
+model ClassSchedule {
+  id                    String   @id @default(cuid())
+  subjectId             String
+  subject               Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  dayOfWeek             Int // 0=Sunday .. 6=Saturday (JS Date convention)
+  startTime             String // "12:15"
+  endTime               String // "13:10"
+  room                  String?
+  facultyName           String?
+  alternateWeek         Boolean  @default(false) // true = occurs every OTHER week only (e.g. a biweekly French class)
+  alternateWeekAnchorDate DateTime? @db.Date // a known date (in the past or future) on which this slot DOES occur; parity from here decides other weeks
+
+  createdAt             DateTime @default(now())
+
+  @@index([dayOfWeek])
 }
 
 model Assignment {

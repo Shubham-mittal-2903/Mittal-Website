@@ -17,6 +17,7 @@ const DEFAULTS: SubjectFormInput = {
   credits: "",
   facultyName: "",
   minAttendancePct: "75",
+  semesterTotalClasses: "",
   examDate: "",
   internalMarks: "",
 };
@@ -114,13 +115,26 @@ export default function SubjectForm({ id, subject }: { id?: string; subject?: Su
             )}
           />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="minAttendancePct"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Min attendance %</FormLabel>
+                <FormControl>
+                  <Input type="number" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="semesterTotalClasses"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Total classes this semester</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>

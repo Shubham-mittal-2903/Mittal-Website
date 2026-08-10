@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { buildMosContext } from "@/lib/ai/mos-context";
 import { JAYDEN_OS_SYSTEM_PROMPT } from "@/lib/ai/jayden-os-prompt";
 import { readRepoFiles, proposeChange } from "@/lib/ai/github-tools";
-import { markAttendanceBatch, createTaskTool, updateLeadStageTool, logTransactionTool, setPrepTopicStatusTool } from "@/lib/ai/data-tools";
+import { markAttendanceBatch, createTaskTool, updateLeadStageTool, logTransactionTool, setPrepTopicStatusTool, manageDatabaseTool } from "@/lib/ai/data-tools";
 import type { LeadStatus, TaskPriority, PrepTopicStatus, TransactionType } from "@/lib/generated/prisma/client";
 
 export const runtime = "nodejs";
@@ -134,6 +134,28 @@ const DATA_TOOLS: Anthropic.Tool[] = [
       required: ["topicTitle", "status"],
     },
   },
+  {
+    name: "manage_database",
+    description:
+      "Direct read/write access to any MITTAL OS table, for anything the other tools above don't cover (e.g. editing a Resume, updating a JobApplication, creating a VaultItem, adjusting Budget). Prefer the named tools above when one fits — they encode the correct multi-step behavior (e.g. mark_attendance keeps attendance totals consistent). Use this one freely otherwise; Shubham has given you full trust to operate the database directly. Bulk updateMany/deleteMany are not available — for multiple records, call this tool once per record instead, so one mistake never touches more than it should.",
+    input_schema: {
+      type: "object",
+      properties: {
+        model: {
+          type: "string",
+          description:
+            "Prisma model name, camelCase: lead, pipelineEvent, leadNote, emailDraft, emailHistoryEntry, followupEntry, audit, auditFinding, attachment, client, proposal, contract, invoice, dailyReport, appSettings, project, task, resume, jobApplication, jobChecklistItem, interviewRound, prepRoadmap, prepMilestone, prepTopic, prepTarget, learningTopic, learningResource, learningProject, subject, assignment, attendanceEntry, financeCategory, transaction, budget, vaultItem",
+        },
+        operation: { type: "string", enum: ["findMany", "findFirst", "create", "update", "upsert", "delete", "count"] },
+        args: {
+          type: "object",
+          description:
+            "Standard Prisma args object for the operation, e.g. {\"where\":{\"id\":\"...\"},\"data\":{...}} for update, {\"data\":{...}} for create, {\"where\":{...},\"take\":20} for findMany.",
+        },
+      },
+      required: ["model", "operation"],
+    },
+  },
 ];
 
 const CODE_TOOLS: Anthropic.Tool[] = [
@@ -210,6 +232,12 @@ async function runTool(name: string, input: Record<string, unknown>): Promise<st
           topicTitle: String(input.topicTitle ?? ""),
           status: input.status as PrepTopicStatus,
         });
+      case "manage_database":
+        return await manageDatabaseTool({
+          model: String(input.model ?? ""),
+          operation: String(input.operation ?? ""),
+          args: input.args,
+        });
       case "read_repo_files":
         return await readRepoFiles(Array.isArray(input.paths) ? (input.paths as string[]) : []);
       case "propose_change":
@@ -239,6 +267,8 @@ function statusLineFor(name: string, input: Record<string, unknown>): string {
       return `\n\n_Logging transaction…_\n\n`;
     case "set_prep_topic_status":
       return `\n\n_Updating prep topic…_\n\n`;
+    case "manage_database":
+      return `\n\n_${String(input.operation ?? "Updating")} on ${String(input.model ?? "database")}…_\n\n`;
     case "read_repo_files": {
       const paths = Array.isArray(input.paths) ? (input.paths as string[]) : [];
       return `\n\n_Reading ${paths.map((p) => `\`${p}\``).join(", ")}…_\n\n`;

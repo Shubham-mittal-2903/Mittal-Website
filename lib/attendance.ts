@@ -23,3 +23,25 @@ export function classesNeedToAttend(attended: number, total: number, minPct: num
   const y = (min * total - attended) / (1 - min);
   return Math.max(0, Math.ceil(y));
 }
+
+// Same question as classesNeedToAttend/classesCanMiss, but bounded by a fixed semester total
+// instead of assuming an infinite number of future classes. Returns null for needToAttend when
+// even attending every remaining class can't reach the minimum by semester end.
+export function semesterAttendanceProjection(
+  attended: number,
+  heldSoFar: number,
+  semesterTotal: number,
+  minPct: number
+): { remaining: number; needToAttend: number | null; canMiss: number } {
+  const remaining = Math.max(0, semesterTotal - heldSoFar);
+  const min = minPct / 100;
+
+  const bestCasePct = semesterTotal > 0 ? (attended + remaining) / semesterTotal : 0;
+  if (bestCasePct < min) {
+    return { remaining, needToAttend: null, canMiss: 0 };
+  }
+
+  const needToAttend = Math.max(0, Math.ceil(min * semesterTotal - attended));
+  const canMiss = Math.max(0, remaining - needToAttend);
+  return { remaining, needToAttend, canMiss };
+}
