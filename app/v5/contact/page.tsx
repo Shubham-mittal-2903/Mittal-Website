@@ -40,7 +40,7 @@ export default function ContactPage() {
               {[
                 { icon: <MessageCircle size={20} />, label: "WhatsApp (fastest)", value: "+91 77019 03505", href: "https://wa.me/917701903505" },
                 { icon: <Phone size={20} />, label: "Phone", value: "+91 77019 03505", href: "tel:+917701903505" },
-                { icon: <Mail size={20} />, label: "Email", value: "contact@mittaldev.website", href: "mailto:contact@mittaldev.website" },
+                { icon: <Mail size={20} />, label: "Email", value: "shubhammittal3555@gmail.com", href: "mailto:shubhammittal3555@gmail.com" },
                 { icon: <MapPin size={20} />, label: "Location", value: "Delhi NCR, India", href: undefined },
                 { icon: <Clock size={20} />, label: "Response time", value: "Usually within 2 hours", href: undefined },
               ].map((c, i) => (

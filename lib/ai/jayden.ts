@@ -421,7 +421,7 @@ const ANSWERS: Record<Intent, LangPack> = {
   },
   contact: {
     en: [
-      "Easiest is WhatsApp +91 77019 03505. Or email contact@mittaldev.website. Want me to share your details so the team pings you?",
+      "Easiest is WhatsApp +91 77019 03505. Or email shubhammittal3555@gmail.com. Want me to share your details so the team pings you?",
       "WhatsApp +91 77019 03505 is the fastest path. Drop me your name + number and I'll forward to the team.",
     ],
     hinglish: [

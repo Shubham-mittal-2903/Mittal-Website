@@ -101,7 +101,7 @@ export default function V5Layout({ children }: { children: React.ReactNode }) {
         logo: `${siteUrl}/logo.png`,
         slogan: "Websites That Actually Grow Businesses",
         description: "Founder-led web design studio in Delhi NCR building custom websites, e-commerce stores and web applications from ₹5,555.",
-        email: "contact@mittaldev.website",
+        email: "shubhammittal3555@gmail.com",
         telephone: "+917701903505",
         foundingDate: "2024",
         founder: {
@@ -131,7 +131,7 @@ export default function V5Layout({ children }: { children: React.ReactNode }) {
         contactPoint: {
           "@type": "ContactPoint",
           telephone: "+917701903505",
-          email: "contact@mittaldev.website",
+          email: "shubhammittal3555@gmail.com",
           contactType: "sales",
           availableLanguage: ["English", "Hindi", "Hinglish"],
           areaServed: "IN",
@@ -157,7 +157,7 @@ export default function V5Layout({ children }: { children: React.ReactNode }) {
         name: "MITTAL.WEBSITE",
         description: "Custom website development, e-commerce stores, and web applications for businesses across India. Fixed pricing, 10-day delivery, founder-led communication.",
         url: siteUrl,
-        email: "contact@mittaldev.website",
+        email: "shubhammittal3555@gmail.com",
         telephone: "+917701903505",
         priceRange: "₹5,555 - ₹50,000+",
         currenciesAccepted: "INR",

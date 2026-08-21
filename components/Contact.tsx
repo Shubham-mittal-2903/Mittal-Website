@@ -168,7 +168,7 @@ export default function Contact() {
                   {status === "error" && (
                     <p className="sm:col-span-2 text-sm text-red-400">
                       Something went wrong. Please try again or email {""}
-                      <span className="text-white">hello@mittal.website</span>.
+                      <span className="text-white">shubhammittal3555@gmail.com</span>.
                     </p>
                   )}
 

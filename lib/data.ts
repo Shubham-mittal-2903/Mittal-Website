@@ -12,7 +12,7 @@ export const BRAND = {
   name: "MITTAL.WEBSITE",
   poweredBy: "Powered by mittal.website",
   tagline: "Websites That Actually Grow Businesses.",
-  email: "contact@mittaldev.website",
+  email: "shubhammittal3555@gmail.com",
   phone: "+917701903505",
   phoneDisplay: "+91 77019 03505",
   whatsapp: "https://wa.me/917701903505",

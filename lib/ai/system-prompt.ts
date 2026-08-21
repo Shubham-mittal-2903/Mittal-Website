@@ -71,7 +71,7 @@ Founder-led boutique studio. Same people handle strategy → design → developm
 
 **Contact:**
 - WhatsApp / Call: +91 77019 03505
-- Email: contact@mittaldev.website
+- Email: shubhammittal3555@gmail.com
 - Website: mittaldev.website
 - Service area: Delhi NCR (Delhi, Noida, Gurugram, Ghaziabad, Faridabad) + all India remotely
 

@@ -35,7 +35,7 @@ export default function V5Footer() {
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <a href="https://wa.me/917701903505" target="_blank" rel="noopener" className="v5-sans" style={{ fontSize: 14, color: "#444" }}>WhatsApp</a>
                 <a href="https://www.instagram.com/mittal.website" target="_blank" rel="noopener" className="v5-sans" style={{ fontSize: 14, color: "#444" }}>Instagram</a>
-                <a href="mailto:contact@mittaldev.website" className="v5-sans" style={{ fontSize: 14, color: "#444" }}>Email</a>
+                <a href="mailto:shubhammittal3555@gmail.com" className="v5-sans" style={{ fontSize: 14, color: "#444" }}>Email</a>
                 <a href="tel:+917701903505" className="v5-sans" style={{ fontSize: 14, color: "#444" }}>+91 77019 03505</a>
               </div>
             </div>
