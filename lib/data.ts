@@ -271,15 +271,6 @@ export const PROJECTS: Project[] = [
     liveUrl: "https://www.clearmychallan.co.in/",
   },
   {
-    name: "4 Knotts Stationary",
-    category: "Premium Notebook E-Commerce",
-    summary:
-      "A premium notebook brand's storefront with full account, cart and checkout flows — built end to end from design to backend.",
-    tech: ["React 19", "Firebase", "Express"],
-    gradient: "from-rosegold/40 to-electric/30",
-    initials: "4K",
-  },
-  {
     name: "Noqify",
     category: "Browser Productivity Toolkit",
     summary:
@@ -324,22 +315,6 @@ export const PERSONAL_PROJECTS: PersonalProject[] = [
       "A SaaS product for AI-generated video, with pluggable model providers, Stripe billing and cloud storage built in from day one.",
     tech: ["Next.js 15", "Stripe", "R2"],
     status: "In Development",
-  },
-  {
-    name: "KNOTTBOX",
-    category: "AI Teacher Co-Pilot",
-    summary:
-      "An EduMind AI teaching assistant with 14 education-specific prompt tools and per-school memory, built for real classrooms.",
-    tech: ["Node.js", "Claude API", "Express"],
-    status: "Backend Live",
-  },
-  {
-    name: "Mark XXXIX-OR",
-    category: "Voice Assistant",
-    summary:
-      "A JARVIS-style desktop voice assistant with live conversational AI and a custom PyQt6 interface.",
-    tech: ["Python", "PyQt6", "Gemini Live"],
-    status: "Running Locally",
   },
 ];
 
