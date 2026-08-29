@@ -14,7 +14,7 @@ type TxItem = {
   category: { name: string } | null;
 };
 
-const money = (v: string) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "USD" }).format(Number(v));
+const money = (v: string) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(v));
 
 export default function FinanceTransactionList({ transactions }: { transactions: TxItem[] }) {
   const router = useRouter();

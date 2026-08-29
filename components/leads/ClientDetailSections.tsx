@@ -24,7 +24,7 @@ type Invoice = { id: string; invoiceNumber: string; amount: string; status: stri
 
 function money(v: string | number | null) {
   if (v == null) return "—";
-  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "USD" }).format(Number(v));
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(v));
 }
 
 function ProposalsSection({ clientId, leadId, proposals }: { clientId: string; leadId: string | null; proposals: Proposal[] }) {

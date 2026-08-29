@@ -11,7 +11,7 @@ import {
 } from "@/components/leads/AnalyticsCharts";
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "USD" }).format(n);
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(n);
 }
 
 export default async function AnalyticsPage() {

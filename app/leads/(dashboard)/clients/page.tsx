@@ -56,7 +56,7 @@ export default async function ClientsPage() {
                       <Badge variant={c.status === "ACTIVE" ? "default" : "secondary"}>{c.status}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Intl.NumberFormat("en-IN", { style: "currency", currency: "USD" }).format(revenue)}
+                      {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(revenue)}
                     </TableCell>
                   </TableRow>
                 );

@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 type CategoryOption = { id: string; name: string; type: string };
 type BudgetItem = { id: string; categoryId: string; categoryName: string; limitAmount: string; spent: number };
 
-const money = (v: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "USD" }).format(v);
+const money = (v: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(v);
 
 export default function FinanceBudgets({
   categories,

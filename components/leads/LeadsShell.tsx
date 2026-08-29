@@ -6,6 +6,7 @@ import TopBar from "./TopBar";
 import BottomNav from "./BottomNav";
 import CommandPalette from "./CommandPalette";
 import { Toaster } from "@/components/ui/sonner";
+import CardSpotlight from "@/components/CardSpotlight";
 
 export default function LeadsShell({
   email,
@@ -26,6 +27,7 @@ export default function LeadsShell({
       <BottomNav onSearchClick={() => setSearchOpen(true)} />
       <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       <Toaster theme="dark" />
+      <CardSpotlight />
     </div>
   );
 }

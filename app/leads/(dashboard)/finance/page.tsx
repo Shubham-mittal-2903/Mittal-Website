@@ -6,7 +6,7 @@ import FinanceBudgets from "@/components/leads/FinanceBudgets";
 import { TRANSACTION_TYPES } from "@/lib/validations/finance";
 import { todayDateOnly, dateOnly } from "@/lib/date-utils";
 
-const money = (v: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "USD" }).format(v);
+const money = (v: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(v);
 
 export default async function FinancePage({
   searchParams,

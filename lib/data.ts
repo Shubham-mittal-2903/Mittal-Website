@@ -28,6 +28,7 @@ export type NavLink = { label: string; href: string };
 export const NAV_LINKS: NavLink[] = [
   { label: "Home", href: "/" },
   { label: "Solutions", href: "/#solutions" },
+  { label: "Portfolio", href: "/portfolio" },
   { label: "Gallery", href: "/website-gallery" },
   { label: "Pricing", href: "/#pricing" },
   { label: "Blog", href: "/blog" },
@@ -250,6 +251,16 @@ export const PROJECTS: Project[] = [
     liveUrl: "https://solidstate.co.in/",
   },
   {
+    name: "Purva LED",
+    category: "E-Commerce Storefront",
+    summary:
+      "An outdoor architectural LED lighting storefront rebuilt on Shopify with a full SEO and conversion overhaul for B2B and D2C buyers.",
+    tech: ["Shopify", "SEO", "E-Commerce"],
+    gradient: "from-gold/40 to-rosegold/30",
+    initials: "PL",
+    liveUrl: "https://purvaled.com/",
+  },
+  {
     name: "ClearMyChallan",
     category: "Traffic Challan Solution Platform",
     summary:
@@ -259,6 +270,86 @@ export const PROJECTS: Project[] = [
     initials: "CM",
     liveUrl: "https://www.clearmychallan.co.in/",
   },
+  {
+    name: "4 Knotts Stationary",
+    category: "Premium Notebook E-Commerce",
+    summary:
+      "A premium notebook brand's storefront with full account, cart and checkout flows — built end to end from design to backend.",
+    tech: ["React 19", "Firebase", "Express"],
+    gradient: "from-rosegold/40 to-electric/30",
+    initials: "4K",
+  },
+  {
+    name: "Noqify",
+    category: "Browser Productivity Toolkit",
+    summary:
+      "An editorial, Apple-style rebuild of a premium browser-toolkit brand, built with cinematic scroll and motion throughout.",
+    tech: ["Next.js 15", "GSAP", "Three.js"],
+    gradient: "from-electric/40 to-violet/30",
+    initials: "NQ",
+  },
+  {
+    name: "Mittal Digital",
+    category: "Agency Site & Internal CRM",
+    summary:
+      "This site — designed, built and run solo, including the client-facing brand and an internal AI-powered CRM (\"MITTAL OS\") behind it.",
+    tech: ["Next.js 15", "Prisma", "AI Ops"],
+    gradient: "from-champagne/40 to-electric/30",
+    initials: "MD",
+    liveUrl: "https://www.mittaldev.website/",
+  },
+];
+
+export type PersonalProject = {
+  name: string;
+  category: string;
+  summary: string;
+  tech: string[];
+  status: string;
+};
+
+export const PERSONAL_PROJECTS: PersonalProject[] = [
+  {
+    name: "JAYDEN AI",
+    category: "Personal AI Operating System",
+    summary:
+      "A provider-agnostic AI engine with tiered memory and an agent system — the AI that now runs behind the MITTAL OS dashboard.",
+    tech: ["Next.js", "Multi-Provider AI", "Agents"],
+    status: "In Active Development",
+  },
+  {
+    name: "Lumina AI",
+    category: "AI Video Generator SaaS",
+    summary:
+      "A SaaS product for AI-generated video, with pluggable model providers, Stripe billing and cloud storage built in from day one.",
+    tech: ["Next.js 15", "Stripe", "R2"],
+    status: "In Development",
+  },
+  {
+    name: "KNOTTBOX",
+    category: "AI Teacher Co-Pilot",
+    summary:
+      "An EduMind AI teaching assistant with 14 education-specific prompt tools and per-school memory, built for real classrooms.",
+    tech: ["Node.js", "Claude API", "Express"],
+    status: "Backend Live",
+  },
+  {
+    name: "Mark XXXIX-OR",
+    category: "Voice Assistant",
+    summary:
+      "A JARVIS-style desktop voice assistant with live conversational AI and a custom PyQt6 interface.",
+    tech: ["Python", "PyQt6", "Gemini Live"],
+    status: "Running Locally",
+  },
+];
+
+export type SkillGroup = { label: string; skills: string[] };
+
+export const SKILLS: SkillGroup[] = [
+  { label: "Frontend", skills: ["Next.js", "React", "TypeScript", "Tailwind CSS", "Framer Motion"] },
+  { label: "Backend", skills: ["Node.js", "Express", "Prisma", "PostgreSQL", "MongoDB"] },
+  { label: "AI & Automation", skills: ["Claude API", "Multi-Model Orchestration", "RAG", "Agents"] },
+  { label: "Other", skills: ["Firebase", "Shopify", "Python", "SEO", "Stripe"] },
 ];
 
 export type ProcessStep = { step: string; title: string; description: string };

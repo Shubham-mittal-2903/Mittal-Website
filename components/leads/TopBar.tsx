@@ -24,7 +24,14 @@ export default function TopBar({
         </kbd>
       </button>
       <div className="hidden items-center gap-3 lg:flex">
-        {email && <span className="text-sm text-muted-foreground">{email}</span>}
+        {email && (
+          <div className="flex items-center gap-2">
+            <span className="bg-brand-gradient flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold text-white shadow-[0_0_10px_hsl(158_55%_25%/0.5)]">
+              {email.charAt(0).toUpperCase()}
+            </span>
+            <span className="text-sm text-muted-foreground">{email}</span>
+          </div>
+        )}
         <form action={signOut}>
           <Button type="submit" variant="outline" size="sm">
             Sign out
