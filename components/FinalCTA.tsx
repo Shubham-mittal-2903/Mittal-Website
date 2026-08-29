@@ -3,6 +3,7 @@
 import { ArrowRight, Phone } from "lucide-react";
 import { BRAND } from "@/lib/data";
 import Reveal from "./Reveal";
+import TypographyPractical from "./TypographyPractical";
 
 export default function FinalCTA() {
   return (
@@ -14,10 +15,13 @@ export default function FinalCTA() {
             <div className="absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-violet/20 blur-3xl" />
 
             <div className="relative">
-              <h2 className="mx-auto max-w-3xl font-display text-3xl font-bold tracking-tight sm:text-5xl">
-                Ready To Build Something{" "}
-                <span className="gradient-text animate-gradient-pan">Amazing?</span>
-              </h2>
+              <div className="mx-auto max-w-3xl">
+                <TypographyPractical
+                  text="Ready To Build Something Amazing?"
+                  fontSize="clamp(28px, 5vw, 48px)"
+                  className="font-bold tracking-tight text-white"
+                />
+              </div>
               <p className="mx-auto mt-5 max-w-xl text-base text-white/65 sm:text-lg">
                 Let&apos;s turn your idea into a website that wins you more customers.
               </p>

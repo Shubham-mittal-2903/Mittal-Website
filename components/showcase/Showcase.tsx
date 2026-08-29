@@ -7,6 +7,7 @@ import { ArrowUpRight, Eye, Sparkles } from "lucide-react";
 import { CATEGORIES, INDUSTRY_FILTERS, type IndustryGroup } from "@/lib/showcase";
 import SectionHeading from "@/components/SectionHeading";
 import Reveal from "@/components/Reveal";
+import InfiniteMenu from "@/components/InfiniteMenu";
 import DemoFrame from "./DemoFrame";
 
 export default function Showcase() {
@@ -29,6 +30,13 @@ export default function Showcase() {
           }
           subtitle="Explore the kinds of websites we build. Pick the closest one to your business and we'll customise it end-to-end for you."
         />
+
+        {/* Infinite Menu — scrolling categories */}
+        <Reveal delay={0.08}>
+          <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
+            <InfiniteMenu items={CATEGORIES.map(c => ({ label: c.title, href: `/website-gallery?category=${c.slug}` }))} />
+          </div>
+        </Reveal>
 
         {/* Filter pills */}
         <Reveal delay={0.1}>

@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { SERVICES } from "@/lib/data";
 import SectionHeading from "./SectionHeading";
 import Reveal from "./Reveal";
+import DecryptedText from "./DecryptedText";
 
 export default function Services() {
   return (
@@ -12,9 +13,7 @@ export default function Services() {
         <SectionHeading
           eyebrow="What We Build"
           title={
-            <>
-              What We Build, <span className="gradient-text">Built To Convert</span>
-            </>
+            <DecryptedText text="What We Build, Built To Convert" speed={35} />
           }
           subtitle="Everything your business needs to win online — designed to convert visitors into paying customers."
         />

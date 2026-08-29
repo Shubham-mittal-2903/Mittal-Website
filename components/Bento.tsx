@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Reveal from "./Reveal";
 import SectionHeading from "./SectionHeading";
+import TextPressure from "./TextPressure";
 
 export default function Bento() {
   return (
@@ -36,7 +37,7 @@ export default function Bento() {
                 </div>
                 <div>
                   <div className="font-display text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-                    Live in <span className="gradient-text">10 days.</span>
+                    <TextPressure text="Live in 10 days." minWeight={300} maxWeight={900} radius={200} />
                   </div>
                   <p className="mt-3 max-w-md text-sm leading-relaxed text-white/55">
                     Most projects launch within 10 days from kickoff. Simple sites

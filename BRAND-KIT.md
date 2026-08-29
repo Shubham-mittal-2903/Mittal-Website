@@ -156,7 +156,7 @@ Startups · Local businesses · Restaurants · Manufacturers · Personal brands 
 ## 12. CONTACT
 
 - **WhatsApp / Call:** +91 77019 03505
-- **Email:** contact@mittaldev.website
+- **Email:** shubhammittal1204@gmail.com
 - **Website:** https://mittaldev.website
 
 ---

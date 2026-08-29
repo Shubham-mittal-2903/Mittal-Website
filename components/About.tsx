@@ -3,6 +3,7 @@
 import { CheckCircle2 } from "lucide-react";
 import { STATS } from "@/lib/data";
 import Reveal from "./Reveal";
+import DecryptedText from "./DecryptedText";
 
 const benefits = [
   "Build trust",
@@ -22,7 +23,7 @@ export default function About() {
           </Reveal>
           <Reveal delay={0.05}>
             <h2 className="mt-5 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              Why <span className="gradient-text">MITTAL.WEBSITE?</span>
+              <DecryptedText text="Why MITTAL.WEBSITE?" speed={40} />
             </h2>
           </Reveal>
           <Reveal delay={0.1}>

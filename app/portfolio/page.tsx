@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { ArrowUpRight, ExternalLink, BadgeCheck } from "lucide-react";
+import { ArrowUpRight, ExternalLink, BadgeCheck, Download, FileText } from "lucide-react";
 import { PROJECTS, PERSONAL_PROJECTS, SKILLS } from "@/lib/data";
 import Reveal from "@/components/Reveal";
 import Tilt from "@/components/Tilt";
@@ -12,6 +12,19 @@ export const metadata: Metadata = {
     "Shubham Mittal — B.Tech CSE student and founder of MITTAL.WEBSITE. Full-stack developer building websites, e-commerce stores and AI-powered products end to end.",
   alternates: { canonical: "/portfolio" },
 };
+
+const RESUMES = [
+  {
+    label: "Software Engineer",
+    description: "Focused on architecture, system design and full-stack engineering.",
+    href: "/resume/Shubham-Mittal-Software-Engineer.pdf",
+  },
+  {
+    label: "Web Developer",
+    description: "Focused on frontend craft, product builds and client delivery.",
+    href: "/resume/Shubham-Mittal-Web-Developer.pdf",
+  },
+];
 
 const STATS = [
   { value: `${PROJECTS.length + PERSONAL_PROJECTS.length}+`, label: "Products Shipped" },
@@ -217,6 +230,37 @@ export default function PortfolioPage() {
                     ))}
                   </div>
                 </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Resume */}
+      <section className="mt-8 py-8">
+        <div className="container-px">
+          <SectionHeading eyebrow="Resume" title="Download My Resume" />
+          <div className="mx-auto mt-12 grid max-w-3xl gap-6 sm:grid-cols-2">
+            {RESUMES.map((r, i) => (
+              <Reveal key={r.label} delay={(i % 2) * 0.08}>
+                <a
+                  href={r.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass group flex items-center gap-4 rounded-2xl p-5 transition-colors duration-500 hover:border-gold/40"
+                >
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-white/70">
+                    <FileText size={22} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold">{r.label}</h3>
+                    <p className="mt-0.5 text-xs leading-relaxed text-white/50">{r.description}</p>
+                  </div>
+                  <Download
+                    size={16}
+                    className="shrink-0 text-white/40 transition-colors group-hover:text-white"
+                  />
+                </a>
               </Reveal>
             ))}
           </div>

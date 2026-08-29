@@ -4,6 +4,8 @@ import type { MotionValue } from "framer-motion";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import MagneticButton from "./MagneticButton";
 import TextReveal from "./TextReveal";
+import DecryptedText from "./DecryptedText";
+import MagnetLines from "./MagnetLines";
 import {
   ArrowRight,
   Sparkles,
@@ -77,6 +79,9 @@ export default function Hero() {
       id="home"
       className="relative flex min-h-screen items-center overflow-hidden pt-36 pb-16"
     >
+      {/* MagnetLines background */}
+      <MagnetLines rows={10} columns={20} lineColor="rgba(255,255,255,0.08)" radius={200} />
+
       {/* Particles */}
       <div className="pointer-events-none absolute inset-0">
         {Array.from({ length: 22 }).map((_, i) => (
@@ -105,7 +110,7 @@ export default function Hero() {
           >
             <span className="eyebrow">
               <Sparkles size={14} className="text-white" />
-              Web Development Agency · Delhi NCR
+              <DecryptedText text="Web Development Agency · Delhi NCR" speed={30} triggerOnView={false} />
             </span>
           </motion.div>
 
