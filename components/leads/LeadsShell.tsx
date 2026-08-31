@@ -19,7 +19,7 @@ export default function LeadsShell({
 
   return (
     <div data-leads-theme className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar email={email} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar email={email} onSearchClick={() => setSearchOpen(true)} />
         <main className="min-w-0 flex-1 p-4 pb-24 lg:p-6 lg:pb-6">{children}</main>

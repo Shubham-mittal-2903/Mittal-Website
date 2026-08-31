@@ -4,9 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_GROUPS } from "./nav-items";
 import { cn } from "@/lib/utils";
+import { signOut } from "@/lib/actions/auth";
 
-export default function Sidebar() {
+export default function Sidebar({ email }: { email: string | null }) {
   const pathname = usePathname();
+  const initial = email ? email.charAt(0).toUpperCase() : "S";
+  const name = email ? email.split("@")[0] : "Shubham";
 
   return (
     <aside className="glass-strong sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-border p-4 lg:flex">
@@ -47,6 +50,24 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
+
+      <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-border p-2.5">
+        <span className="bg-brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white shadow-[0_0_10px_hsl(158_55%_25%/0.5)]">
+          {initial}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium capitalize">{name}</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground/70">Founder</p>
+        </div>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:text-destructive"
+          >
+            Sign out
+          </button>
+        </form>
+      </div>
     </aside>
   );
 }
