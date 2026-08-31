@@ -17,11 +17,11 @@ export default function Sidebar({ email }: { email: string | null }) {
         <span className="bg-brand-gradient h-2 w-2 shrink-0 rounded-full shadow-[0_0_12px_hsl(158_55%_35%/0.5)]" />
         <span className="font-display text-lg font-semibold tracking-tight">MITTAL OS</span>
       </div>
-      <nav className="mt-2 flex flex-1 flex-col gap-4">
+      <nav className="mt-2 flex flex-1 flex-col gap-4 overflow-y-auto">
         {NAV_GROUPS.map((group, i) => (
           <div key={group.label ?? `ungrouped-${i}`} className="flex flex-col gap-0.5">
             {group.label && (
-              <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              <div className="px-3 pb-2 pt-2 font-leads-mono text-[9px] font-medium uppercase tracking-[0.18em] text-foreground/30">
                 {group.label}
               </div>
             )}
@@ -33,16 +33,13 @@ export default function Sidebar({ email }: { email: string | null }) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "relative flex items-center gap-3 rounded-lg py-2 pl-3.5 pr-3 text-sm transition-all duration-200",
+                    "relative flex min-h-[38px] items-center gap-3 rounded-[7px] px-3 text-xs font-medium transition-colors duration-150",
                     active
-                      ? "bg-secondary text-secondary-foreground"
-                      : "text-muted-foreground hover:translate-x-0.5 hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-primary/10 font-semibold text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
                 >
-                  {active && (
-                    <span className="bg-brand-gradient absolute -left-1 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full" />
-                  )}
-                  <item.icon size={17} className={active ? "text-foreground" : ""} />
+                  <item.icon size={16} className={active ? "text-primary" : ""} />
                   {item.label}
                 </Link>
               );

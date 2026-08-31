@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Cormorant_Garamond } from "next/font/google";
+import { Inter, Cormorant_Garamond, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { BRAND, FAQS } from "@/lib/data";
 import Preloader from "@/components/Preloader";
 import AuroraBackground from "@/components/AuroraBackground";
@@ -27,6 +27,22 @@ const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
   variable: "--font-display",
+  display: "swap",
+});
+
+// Dashboard-only (/leads) typography — matches the Kreativ Workspace reference layout.
+// Scoped via [data-leads-theme] in globals.css; never used on the public marketing site.
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-leads-display",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-leads-mono",
   display: "swap",
 });
 
@@ -147,7 +163,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${cormorant.variable}`}
+      className={`${inter.variable} ${cormorant.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased" suppressHydrationWarning>
