@@ -207,13 +207,6 @@ body::after {
   background: hsl(var(--brand-green) / 0.06);
   border-color: hsl(var(--brand-green-light) / 0.3);
 }
-[data-leads-theme] .card-glow {
-  border-radius: var(--r-md);
-  box-shadow: var(--e-flat);
-  transition:
-    background var(--dur-2) var(--leads-ease),
-    border-color var(--dur-2) var(--leads-ease);
-}
 [data-leads-theme] .bg-brand-gradient {
   background: linear-gradient(
     120deg,
@@ -281,40 +274,6 @@ body::after {
   --brand-green: 158 55% 22%;
   --brand-green-light: 152 40% 38%;
   --brand-ivory: 45 30% 92%;
-
-  /* Typography, spacing, radius, elevation, motion scale — matched to the Kreativ Workspace
-     reference layout structure (colors are ours, everything else is theirs). */
-  --font-display: var(--font-leads-display);
-  --font-mono: var(--font-leads-mono);
-
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 20px;
-  --s-6: 24px;
-  --s-8: 32px;
-  --s-10: 40px;
-  --s-12: 48px;
-  --s-16: 64px;
-
-  --r-xs: 4px;
-  --r-sm: 7px;
-  --r-md: 11px;
-  --r-lg: 16px;
-  --r-full: 999px;
-
-  --leads-line: hsl(var(--border) / 0.6);
-  --leads-hilite: hsl(var(--brand-ivory) / 0.05);
-  --e-flat: inset 0 1px 0 var(--leads-hilite);
-  --e-raised: inset 0 1px 0 var(--leads-hilite), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --e-menu: 0 10px 30px -6px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--leads-line);
-  --e-modal: 0 32px 70px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px var(--leads-line);
-
-  --dur-1: 120ms;
-  --dur-2: 200ms;
-  --dur-3: 320ms;
-  --leads-ease: cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 [data-leads-theme] * {
   border-color: hsl(var(--border));

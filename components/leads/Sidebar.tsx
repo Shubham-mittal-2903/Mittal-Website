@@ -21,7 +21,7 @@ export default function Sidebar({ email }: { email: string | null }) {
         {NAV_GROUPS.map((group, i) => (
           <div key={group.label ?? `ungrouped-${i}`} className="flex flex-col gap-0.5">
             {group.label && (
-              <div className="px-3 pb-2 pt-2 font-leads-mono text-[9px] font-medium uppercase tracking-[0.18em] text-foreground/30">
+              <div className="px-3 pb-1.5 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
                 {group.label}
               </div>
             )}
@@ -33,10 +33,10 @@ export default function Sidebar({ email }: { email: string | null }) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "relative flex min-h-[38px] items-center gap-3 rounded-[7px] px-3 text-xs font-medium transition-colors duration-150",
+                    "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                     active
-                      ? "bg-primary/10 font-semibold text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-primary/10 text-primary before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-primary"
+                      : "text-muted-foreground hover:translate-x-0.5 hover:bg-accent hover:text-accent-foreground"
                   )}
                 >
                   <item.icon size={16} className={active ? "text-primary" : ""} />

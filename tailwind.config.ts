@@ -67,22 +67,6 @@ const config: Config = {
   				'var(--font-display)',
   				'system-ui',
   				'sans-serif'
-  			],
-  			// Dashboard-only (/leads) — see app/layout.tsx
-  			'leads-display': [
-  				'var(--font-leads-display)',
-  				'system-ui',
-  				'sans-serif'
-  			],
-  			'leads-mono': [
-  				'var(--font-leads-mono)',
-  				'ui-monospace',
-  				'monospace'
-  			],
-  			mono: [
-  				'var(--font-mono, ui-monospace)',
-  				'ui-monospace',
-  				'monospace'
   			]
   		},
   		backgroundImage: {
