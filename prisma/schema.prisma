@@ -106,17 +106,17 @@ enum InvoiceStatus {
 }
 
 model Lead {
-  id             String     @id @default(cuid())
-  leadNumber     Int        @unique
-  legacyId       String?    @unique // e.g. "MA-001", null for app-native leads
+  id         String  @id @default(cuid())
+  leadNumber Int     @unique
+  legacyId   String? @unique // e.g. "MA-001", null for app-native leads
 
-  company        String
-  industry       String?
-  website        String?
-  location       String?
-  email          String?
-  phone          String?
-  decisionMaker  String?
+  company       String
+  industry      String?
+  website       String?
+  location      String?
+  email         String?
+  phone         String?
+  decisionMaker String?
 
   priority       Priority   @default(MEDIUM)
   status         LeadStatus @default(SOURCED)
@@ -125,13 +125,13 @@ model Lead {
   source         String?
   tags           String[]   @default([])
 
-  notes          String?    @db.Text
-  auditNotes     String?    @db.Text
-  aiNotes        String?    @db.Text
+  notes          String? @db.Text
+  auditNotes     String? @db.Text
+  aiNotes        String? @db.Text
   rejectedReason String?
 
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   pipelineEvents PipelineEvent[]
   leadNotes      LeadNote[]
@@ -148,10 +148,10 @@ model Lead {
 }
 
 model PipelineEvent {
-  id             String     @id @default(cuid())
-  legacyRef      String?    @unique
-  leadId         String
-  lead           Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  legacyRef String? @unique
+  leadId    String
+  lead      Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   occurredAt     DateTime
   stage          LeadStatus
@@ -165,7 +165,7 @@ model PipelineEvent {
   nextActionDate DateTime?
   notes          String?    @db.Text
 
-  createdAt      DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   @@index([leadId, occurredAt])
 }
@@ -182,53 +182,53 @@ model LeadNote {
 }
 
 model EmailDraft {
-  id                         String           @id @default(cuid())
-  legacyRef                  String?          @unique
-  leadId                     String
-  lead                       Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  legacyRef String? @unique
+  leadId    String
+  lead      Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
-  version                    String // "v1", "v2", "final" — free text, source isn't uniform
-  status                     EmailDraftStatus @default(DRAFT)
-  subjectOptions              String[]         @default([])
-  subjectFinal                String?
-  previewText                 String?
-  body                        String           @db.Text
-  wordCount                   Int?
-  confidenceScore              Int? // 0-10
-  spamRisk                    String?
-  bestSendTimeProspectLocal    String?
-  bestSendTimeIst              String?
-  followupScheduleNotes        String?          @db.Text
-  portfolioLinksUsed           Json? // [{ url, why }]
-  gmailDraftId                 String?
+  version                   String // "v1", "v2", "final" — free text, source isn't uniform
+  status                    EmailDraftStatus @default(DRAFT)
+  subjectOptions            String[]         @default([])
+  subjectFinal              String?
+  previewText               String?
+  body                      String           @db.Text
+  wordCount                 Int?
+  confidenceScore           Int? // 0-10
+  spamRisk                  String?
+  bestSendTimeProspectLocal String?
+  bestSendTimeIst           String?
+  followupScheduleNotes     String?          @db.Text
+  portfolioLinksUsed        Json? // [{ url, why }]
+  gmailDraftId              String?
 
-  createdAt                   DateTime         @default(now())
-  updatedAt                   DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model EmailHistoryEntry {
-  id            String   @id @default(cuid())
-  legacyRef     String?  @unique
-  leadId        String
-  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  legacyRef String? @unique
+  leadId    String
+  lead      Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
-  date          DateTime
-  subject       String
-  emailVersion  String?
-  status        String
-  opened        Boolean  @default(false)
-  replied       Boolean  @default(false)
-  notes         String?  @db.Text
-  gmailDraftId  String?
+  date         DateTime
+  subject      String
+  emailVersion String?
+  status       String
+  opened       Boolean  @default(false)
+  replied      Boolean  @default(false)
+  notes        String?  @db.Text
+  gmailDraftId String?
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model FollowupEntry {
-  id             String         @id @default(cuid())
-  legacyRef      String?        @unique
-  leadId         String
-  lead           Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  legacyRef String? @unique
+  leadId    String
+  lead      Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   followupNumber Int?
   channel        String?
@@ -238,39 +238,39 @@ model FollowupEntry {
   status         FollowupStatus @default(SCHEDULED)
   notes          String?        @db.Text
 
-  createdAt      DateTime       @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Audit {
-  id                       String   @id @default(cuid())
-  leadId                   String
-  lead                     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   performedAt              DateTime
-  performanceScore          Int?
-  performanceScoreRaw       String? // e.g. "76-84", source gave a range not a point value
-  accessibilityScore        Int?
-  bestPracticesScore        Int?
-  seoScore                  Int?
-  powerMapperPagesFlagged    Int?
-  brokenLinks                String[] @default([])
-  browserIssues              String?  @db.Text
-  accessibilityIssues        String?  @db.Text
-  performanceObservations    String?  @db.Text
-  positiveObservations       String?  @db.Text
-  improvementOpportunities   String?  @db.Text
-  rawNotes                   String?  @db.Text // narrative sections that don't map to a clean column
-  source                     String? // "founder-provided", "live inspection", "PageSpeed API"
-  verified                   Boolean  @default(false)
+  performanceScore         Int?
+  performanceScoreRaw      String? // e.g. "76-84", source gave a range not a point value
+  accessibilityScore       Int?
+  bestPracticesScore       Int?
+  seoScore                 Int?
+  powerMapperPagesFlagged  Int?
+  brokenLinks              String[] @default([])
+  browserIssues            String?  @db.Text
+  accessibilityIssues      String?  @db.Text
+  performanceObservations  String?  @db.Text
+  positiveObservations     String?  @db.Text
+  improvementOpportunities String?  @db.Text
+  rawNotes                 String?  @db.Text // narrative sections that don't map to a clean column
+  source                   String? // "founder-provided", "live inspection", "PageSpeed API"
+  verified                 Boolean  @default(false)
 
-  createdAt                 DateTime @default(now())
-  findings                  AuditFinding[]
+  createdAt DateTime       @default(now())
+  findings  AuditFinding[]
 }
 
 model AuditFinding {
-  id          String      @id @default(cuid())
-  auditId     String
-  audit       Audit       @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  auditId String
+  audit   Audit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
 
   type        FindingType
   category    String?
@@ -279,17 +279,17 @@ model AuditFinding {
 }
 
 model Attachment {
-  id          String             @id @default(cuid())
-  leadId      String?
-  lead        Lead?              @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  clientId    String?
-  client      Client?            @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  proposalId  String?
-  proposal    Proposal?          @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  contractId  String?
-  contract    Contract?          @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  invoiceId   String?
-  invoice     Invoice?           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  leadId     String?
+  lead       Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  clientId   String?
+  client     Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  proposalId String?
+  proposal   Proposal? @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  contractId String?
+  contract   Contract? @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  invoiceId  String?
+  invoice    Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   category    AttachmentCategory
   fileName    String
@@ -311,63 +311,63 @@ model Client {
   status         ClientStatus @default(ACTIVE)
   notes          String?      @db.Text
 
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  proposals      Proposal[]
-  contracts      Contract[]
-  invoices       Invoice[]
-  attachments    Attachment[]
-  projects       Project[]
-  transactions   Transaction[]
+  proposals    Proposal[]
+  contracts    Contract[]
+  invoices     Invoice[]
+  attachments  Attachment[]
+  projects     Project[]
+  transactions Transaction[]
 }
 
 model Proposal {
-  id         String          @id @default(cuid())
-  leadId     String
-  lead       Lead            @relation(fields: [leadId], references: [id])
-  clientId   String?
-  client     Client?         @relation(fields: [clientId], references: [id])
+  id       String  @id @default(cuid())
+  leadId   String
+  lead     Lead    @relation(fields: [leadId], references: [id])
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
 
-  package    ProposalPackage
-  priceMin   Decimal?        @db.Decimal(10, 2)
-  priceMax   Decimal?        @db.Decimal(10, 2)
-  currency   String          @default("USD")
-  status     ProposalStatus  @default(DRAFT)
-  content    String?         @db.Text
-  sentAt     DateTime?
+  package  ProposalPackage
+  priceMin Decimal?        @db.Decimal(10, 2)
+  priceMax Decimal?        @db.Decimal(10, 2)
+  currency String          @default("USD")
+  status   ProposalStatus  @default(DRAFT)
+  content  String?         @db.Text
+  sentAt   DateTime?
 
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  contract   Contract?
+  contract    Contract?
   attachments Attachment[]
 }
 
 model Contract {
-  id         String         @id @default(cuid())
+  id         String    @id @default(cuid())
   clientId   String
-  client     Client         @relation(fields: [clientId], references: [id])
-  proposalId String?        @unique
-  proposal   Proposal?      @relation(fields: [proposalId], references: [id])
+  client     Client    @relation(fields: [clientId], references: [id])
+  proposalId String?   @unique
+  proposal   Proposal? @relation(fields: [proposalId], references: [id])
 
-  value      Decimal?       @db.Decimal(10, 2)
-  status     ContractStatus @default(DRAFT)
-  signedAt   DateTime?
+  value    Decimal?       @db.Decimal(10, 2)
+  status   ContractStatus @default(DRAFT)
+  signedAt DateTime?
 
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  invoices   Invoice[]
+  invoices    Invoice[]
   attachments Attachment[]
 }
 
 model Invoice {
-  id            String        @id @default(cuid())
-  clientId      String
-  client        Client        @relation(fields: [clientId], references: [id])
-  contractId    String?
-  contract      Contract?     @relation(fields: [contractId], references: [id])
+  id         String    @id @default(cuid())
+  clientId   String
+  client     Client    @relation(fields: [clientId], references: [id])
+  contractId String?
+  contract   Contract? @relation(fields: [contractId], references: [id])
 
   invoiceNumber String        @unique // "YYYY-MM-DD-[ClientInitials]-[seq]", built in app code
   amount        Decimal       @db.Decimal(10, 2)
@@ -378,29 +378,29 @@ model Invoice {
   paidAt        DateTime?
   notes         String?       @db.Text
 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  attachments   Attachment[]
-  transaction   Transaction?
+  attachments Attachment[]
+  transaction Transaction?
 }
 
 model DailyReport {
-  id                   String   @id @default(cuid())
-  date                 DateTime @unique @db.Date
-  isPlanOnly           Boolean  @default(false) // true for a day with only an action plan, no completed report
+  id         String   @id @default(cuid())
+  date       DateTime @unique @db.Date
+  isPlanOnly Boolean  @default(false) // true for a day with only an action plan, no completed report
 
-  whatGotDone          String?  @db.Text
-  wins                 String?  @db.Text
-  mistakes             String?  @db.Text
-  lessonsLearned       String?  @db.Text
-  tomorrowsObjectives  String?  @db.Text
-  priorityTasks        String?  @db.Text
-  expectedNumbers      Json?
-  actualNumbers        Json?
+  whatGotDone         String? @db.Text
+  wins                String? @db.Text
+  mistakes            String? @db.Text
+  lessonsLearned      String? @db.Text
+  tomorrowsObjectives String? @db.Text
+  priorityTasks       String? @db.Text
+  expectedNumbers     Json?
+  actualNumbers       Json?
 
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AppSettings {
@@ -441,10 +441,10 @@ model Project {
   completedAt DateTime?
   tags        String[]      @default([])
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  tasks       Task[]
+  tasks Task[]
 
   @@index([status])
 }
@@ -484,8 +484,8 @@ model Task {
   projectId   String?
   project     Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([dueDate])
@@ -504,39 +504,39 @@ enum JobApplicationStatus {
 }
 
 model Resume {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   name       String
-  version    Int      @default(1)
+  version    Int     @default(1)
   targetRole String?
   fileUrl    String? // path within Supabase Storage
   fileName   String?
-  isActive   Boolean  @default(false)
-  notes      String?  @db.Text
+  isActive   Boolean @default(false)
+  notes      String? @db.Text
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   jobApplications JobApplication[]
 }
 
 model JobApplication {
-  id         String                @id @default(cuid())
-  company    String
-  role       String
+  id             String               @id @default(cuid())
+  company        String
+  role           String
   packageOffered String? // "package" is a reserved-ish word in some tooling, avoid it
-  location   String?
-  jdUrl      String?
-  status     JobApplicationStatus  @default(SAVED)
-  appliedAt  DateTime?
-  resumeId   String?
-  resume     Resume?               @relation(fields: [resumeId], references: [id])
-  notes      String?               @db.Text
+  location       String?
+  jdUrl          String?
+  status         JobApplicationStatus @default(SAVED)
+  appliedAt      DateTime?
+  resumeId       String?
+  resume         Resume?              @relation(fields: [resumeId], references: [id])
+  notes          String?              @db.Text
 
-  createdAt  DateTime              @default(now())
-  updatedAt  DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  checklist  JobChecklistItem[]
-  rounds     InterviewRound[]
+  checklist JobChecklistItem[]
+  rounds    InterviewRound[]
 
   @@index([status])
 }
@@ -599,12 +599,12 @@ model PrepRoadmap {
   startDate      DateTime?
   targetDate     DateTime?
 
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  milestones     PrepMilestone[]
-  topics         PrepTopic[]
-  targets        PrepTarget[]
+  milestones PrepMilestone[]
+  topics     PrepTopic[]
+  targets    PrepTarget[]
 }
 
 model PrepMilestone {
@@ -619,20 +619,20 @@ model PrepMilestone {
 }
 
 model PrepTopic {
-  id          String          @id @default(cuid())
-  roadmapId   String
-  roadmap     PrepRoadmap     @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
-  title       String
-  category    String? // "DSA", "Aptitude", "HR", "Technical", ...
-  status      PrepTopicStatus @default(NOT_STARTED)
-  isWeak      Boolean         @default(false)
-  resources   Json? // [{ label, url }]
-  notes       String?         @db.Text
-  order       Int             @default(0)
-  approvedAt  DateTime? // set only on manual approval — status changes are never auto-applied
+  id         String          @id @default(cuid())
+  roadmapId  String
+  roadmap    PrepRoadmap     @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  title      String
+  category   String? // "DSA", "Aptitude", "HR", "Technical", ...
+  status     PrepTopicStatus @default(NOT_STARTED)
+  isWeak     Boolean         @default(false)
+  resources  Json? // [{ label, url }]
+  notes      String?         @db.Text
+  order      Int             @default(0)
+  approvedAt DateTime? // set only on manual approval — status changes are never auto-applied
 
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status])
 }
@@ -667,11 +667,11 @@ model LearningTopic {
   lastRevisedAt DateTime?
   notes         String?        @db.Text
 
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  resources     LearningResource[]
-  projects      LearningProject[]
+  resources LearningResource[]
+  projects  LearningProject[]
 }
 
 model LearningResource {
@@ -711,24 +711,24 @@ enum AttendanceMark {
 }
 
 model Subject {
-  id               String   @id @default(cuid())
-  name             String
-  code             String?
-  credits          Int?
-  facultyName      String?
-  totalClasses     Int      @default(0)
-  attendedClasses  Int      @default(0)
-  minAttendancePct Int      @default(75)
+  id                   String    @id @default(cuid())
+  name                 String
+  code                 String?
+  credits              Int?
+  facultyName          String?
+  totalClasses         Int       @default(0)
+  attendedClasses      Int       @default(0)
+  minAttendancePct     Int       @default(75)
   semesterTotalClasses Int? // planned total classes for the whole semester, distinct from totalClasses (classes held so far) — used to project remaining-classes attendance
-  examDate         DateTime?
-  internalMarks    Decimal? @db.Decimal(5, 2)
+  examDate             DateTime?
+  internalMarks        Decimal?  @db.Decimal(5, 2)
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  assignments      Assignment[]
-  attendanceLog    AttendanceEntry[]
-  scheduleSlots    ClassSchedule[]
+  assignments   Assignment[]
+  attendanceLog AttendanceEntry[]
+  scheduleSlots ClassSchedule[]
 }
 
 // The recurring weekly timetable (from Amizone), separate from AttendanceEntry (the actual
@@ -736,18 +736,18 @@ model Subject {
 // Jayden/the attendance page can ask "how did today's classes go" instead of the user having
 // to name every subject from memory each time.
 model ClassSchedule {
-  id                    String   @id @default(cuid())
-  subjectId             String
-  subject               Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  dayOfWeek             Int // 0=Sunday .. 6=Saturday (JS Date convention)
-  startTime             String // "12:15"
-  endTime               String // "13:10"
-  room                  String?
-  facultyName           String?
-  alternateWeek         Boolean  @default(false) // true = occurs every OTHER week only (e.g. a biweekly French class)
+  id                      String    @id @default(cuid())
+  subjectId               String
+  subject                 Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  dayOfWeek               Int // 0=Sunday .. 6=Saturday (JS Date convention)
+  startTime               String // "12:15"
+  endTime                 String // "13:10"
+  room                    String?
+  facultyName             String?
+  alternateWeek           Boolean   @default(false) // true = occurs every OTHER week only (e.g. a biweekly French class)
   alternateWeekAnchorDate DateTime? @db.Date // a known date (in the past or future) on which this slot DOES occur; parity from here decides other weeks
 
-  createdAt             DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([dayOfWeek])
 }
@@ -783,10 +783,10 @@ enum TransactionType {
 }
 
 model FinanceCategory {
-  id           String            @id @default(cuid())
-  name         String            @unique
-  type         TransactionType
-  createdAt    DateTime          @default(now())
+  id        String          @id @default(cuid())
+  name      String          @unique
+  type      TransactionType
+  createdAt DateTime        @default(now())
 
   transactions Transaction[]
   budgets      Budget[]
@@ -805,7 +805,7 @@ model Transaction {
   invoiceId   String?          @unique
   invoice     Invoice?         @relation(fields: [invoiceId], references: [id])
 
-  createdAt   DateTime         @default(now())
+  createdAt DateTime @default(now())
 
   @@index([date])
   @@index([type])
@@ -840,17 +840,45 @@ enum VaultItemType {
 }
 
 model VaultItem {
-  id        String        @id @default(cuid())
-  title     String
-  type      VaultItemType
-  content   String?       @db.Text // full text for prompts/notes/research — searchable
-  fileUrl   String? // Supabase Storage path for real files
-  fileName  String?
-  fileSize  Int?
-  tags      String[]      @default([])
+  id       String        @id @default(cuid())
+  title    String
+  type     VaultItemType
+  content  String?       @db.Text // full text for prompts/notes/research — searchable
+  fileUrl  String? // Supabase Storage path for real files
+  fileName String?
+  fileSize Int?
+  tags     String[]      @default([])
 
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([type])
+}
+
+// ---------- Jayden Memory ----------
+// Persistent, cross-conversation memory for Jayden — a fact he was told to remember, distinct
+// from the "Live snapshot" (buildMosContext) which is always a fresh DB read. This is the one
+// thing the live snapshot structurally can't cover: something Shubham said in passing that
+// isn't itself a CRM/attendance/finance row (a preference, a decision, context worth carrying
+// into a later conversation on a totally different topic). 'medium' entries expire on their own
+// (see expiresAt); 'long' entries are kept indefinitely until explicitly forgotten.
+enum JaydenMemoryTier {
+  MEDIUM
+  LONG
+}
+
+model JaydenMemory {
+  id         String           @id @default(cuid())
+  tier       JaydenMemoryTier @default(MEDIUM)
+  content    String           @db.Text
+  category   String?
+  importance Float            @default(0.5)
+
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime? // set for MEDIUM tier only; null = never expires (LONG tier)
+  lastAccessedAt DateTime  @default(now())
+  accessCount    Int       @default(0)
+
+  @@index([tier])
+  @@index([expiresAt])
 }

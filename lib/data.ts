@@ -297,6 +297,7 @@ export type PersonalProject = {
   summary: string;
   tech: string[];
   status: string;
+  liveUrl?: string;
 };
 
 export const PERSONAL_PROJECTS: PersonalProject[] = [
@@ -304,9 +305,10 @@ export const PERSONAL_PROJECTS: PersonalProject[] = [
     name: "JAYDEN AI",
     category: "Personal AI Operating System",
     summary:
-      "A provider-agnostic AI engine with tiered memory and an agent system — the AI that now runs behind the MITTAL OS dashboard.",
+      "A provider-agnostic AI engine with tiered memory and an agent system — the same AI running behind MITTAL OS, a desktop voice assistant, and a standalone agent app.",
     tech: ["Next.js", "Multi-Provider AI", "Agents"],
     status: "In Active Development",
+    liveUrl: "/jayden",
   },
   {
     name: "Lumina AI",

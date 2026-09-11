@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { buildMosContext } from "@/lib/ai/mos-context";
 import { JAYDEN_OS_SYSTEM_PROMPT } from "@/lib/ai/jayden-os-prompt";
 import { readRepoFiles, proposeChange } from "@/lib/ai/github-tools";
-import { markAttendanceBatch, createTaskTool, updateLeadStageTool, logTransactionTool, setPrepTopicStatusTool, manageDatabaseTool } from "@/lib/ai/data-tools";
+import { markAttendanceBatch, createTaskTool, updateLeadStageTool, logTransactionTool, setPrepTopicStatusTool, manageDatabaseTool, rememberFactTool, recallMemoryTool } from "@/lib/ai/data-tools";
 import type { LeadStatus, TaskPriority, PrepTopicStatus, TransactionType } from "@/lib/generated/prisma/client";
 
 export const runtime = "nodejs";
@@ -156,6 +156,32 @@ const DATA_TOOLS: Anthropic.Tool[] = [
       required: ["model", "operation"],
     },
   },
+  {
+    name: "memory_remember",
+    description:
+      "Save a fact for later conversations — a preference, a decision, or context about Shubham's life/work that isn't itself a CRM/attendance/finance row the live snapshot would already show you. Use whenever he tells you something worth carrying forward past this conversation.",
+    input_schema: {
+      type: "object",
+      properties: {
+        content: { type: "string", description: "The fact, written as a standalone statement." },
+        tier: { type: "string", enum: ["MEDIUM", "LONG"], description: "MEDIUM (default) expires in 7 days; LONG is kept indefinitely — only use LONG when it's clearly meant to be permanent." },
+        category: { type: "string", description: "optional, e.g. \"preference\", \"client\", \"career\"" },
+      },
+      required: ["content"],
+    },
+  },
+  {
+    name: "memory_recall",
+    description: "Search facts you were previously told to remember. Use whenever Shubham references something from an earlier conversation that isn't in the live snapshot.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string" },
+        topK: { type: "number", description: "max results, default 5" },
+      },
+      required: ["query"],
+    },
+  },
 ];
 
 const CODE_TOOLS: Anthropic.Tool[] = [
@@ -238,6 +264,18 @@ async function runTool(name: string, input: Record<string, unknown>): Promise<st
           operation: String(input.operation ?? ""),
           args: input.args,
         });
+      case "memory_remember":
+        return await rememberFactTool({
+          content: String(input.content ?? ""),
+          tier: input.tier as "MEDIUM" | "LONG" | undefined,
+          category: input.category ? String(input.category) : undefined,
+          importance: typeof input.importance === "number" ? input.importance : undefined,
+        });
+      case "memory_recall":
+        return await recallMemoryTool({
+          query: String(input.query ?? ""),
+          topK: typeof input.topK === "number" ? input.topK : undefined,
+        });
       case "read_repo_files":
         return await readRepoFiles(Array.isArray(input.paths) ? (input.paths as string[]) : []);
       case "propose_change":
@@ -269,6 +307,10 @@ function statusLineFor(name: string, input: Record<string, unknown>): string {
       return `\n\n_Updating prep topic…_\n\n`;
     case "manage_database":
       return `\n\n_${String(input.operation ?? "Updating")} on ${String(input.model ?? "database")}…_\n\n`;
+    case "memory_remember":
+      return `\n\n_Remembering that…_\n\n`;
+    case "memory_recall":
+      return `\n\n_Recalling…_\n\n`;
     case "read_repo_files": {
       const paths = Array.isArray(input.paths) ? (input.paths as string[]) : [];
       return `\n\n_Reading ${paths.map((p) => `\`${p}\``).join(", ")}…_\n\n`;

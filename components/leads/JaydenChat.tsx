@@ -1,10 +1,24 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, ImagePlus, X, Bot } from "lucide-react";
+import { Send, Sparkles, ImagePlus, X, Bot, Mic, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+// Minimal shape of the Web Speech API — TS's DOM lib doesn't ship types for it, and the
+// constructor only exists behind a vendor prefix in Chrome/Edge (the two browsers this is
+// actually used in day to day).
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
 
 type TextBlock = { type: "text"; text: string };
 type ImageBlock = { type: "image"; mediaType: string; data: string };
@@ -116,12 +130,90 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [sending, setSending] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(false);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const spokenIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Voice-out: reads Jayden's replies aloud with a free MS Edge neural voice — same mechanism
+  // the standalone JAYDEN Voice desktop assistant uses, just called from a Next.js API route
+  // instead of a local Node server. Stopped/restarted by the caller; never overlaps itself.
+  const speak = useCallback((id: string, text: string) => {
+    audioRef.current?.pause();
+    setSpeakingId(id);
+    fetch("/api/mos-assistant/speak", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    })
+      .then((res) => (res.ok ? res.blob() : Promise.reject(new Error("tts failed"))))
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => setSpeakingId((cur) => (cur === id ? null : cur));
+        audio.onerror = () => setSpeakingId((cur) => (cur === id ? null : cur));
+        audio.play().catch(() => setSpeakingId((cur) => (cur === id ? null : cur)));
+      })
+      .catch(() => setSpeakingId((cur) => (cur === id ? null : cur)));
+  }, []);
+
+  function stopSpeaking() {
+    audioRef.current?.pause();
+    setSpeakingId(null);
+  }
+
+  // When auto-speak is on, read each finished assistant reply aloud exactly once.
+  useEffect(() => {
+    if (!autoSpeak || sending) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return;
+    const text = renderContent(last.content).trim();
+    if (!text || spokenIdsRef.current.has(last.id)) return;
+    spokenIdsRef.current.add(last.id);
+    speak(last.id, text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, sending, autoSpeak]);
+
+  // Voice-in: tap-to-talk via the Web Speech API — fills the input box, doesn't auto-send.
+  // Jayden's tools can write to the database (attendance, transactions, leads), so a spoken
+  // command still gets the same look-before-you-send step a typed one does.
+  function toggleMic() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SpeechRecognitionCtor =
+      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike; SpeechRecognition?: new () => SpeechRecognitionLike })
+        .webkitSpeechRecognition ??
+      (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition;
+    if (!SpeechRecognitionCtor) {
+      setImageError("Voice input isn't supported in this browser — try Chrome or Edge.");
+      return;
+    }
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = "en-IN"; // handles Hinglish code-switching noticeably better than en-US
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (e) => {
+      // continuous=false + interimResults=false -> exactly one final result when this fires.
+      const transcript = e.results[0]?.[0]?.transcript;
+      if (transcript) setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    setListening(true);
+    recognition.start();
+  }
 
   async function onPickImages(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -204,12 +296,26 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
 
       <div className="relative z-10 mb-3 flex items-center gap-2.5 border-b border-border pb-3">
         <JaydenOrb active={sending} />
-        <div>
+        <div className="flex-1">
           <span className="bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-sm font-semibold text-transparent">
             Jayden
           </span>
           <span className="ml-2 text-xs text-muted-foreground">grounded in your live data</span>
         </div>
+        <motion.div whileTap={{ scale: 0.94 }}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (autoSpeak) stopSpeaking();
+              setAutoSpeak((v) => !v);
+            }}
+            title={autoSpeak ? "Voice replies on — click to mute" : "Voice replies off — click to unmute"}
+          >
+            {autoSpeak ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </Button>
+        </motion.div>
       </div>
 
       <div className="relative z-10 flex-1 space-y-4 overflow-y-auto pr-1">
@@ -277,10 +383,21 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
                   {isEmptyPending ? (
                     <TypingDots />
                   ) : (
-                    <>
-                      {text}
-                      {isStreamingNow && <StreamingCursor />}
-                    </>
+                    <div className="flex items-start gap-1.5">
+                      <span className="flex-1">
+                        {text}
+                        {isStreamingNow && <StreamingCursor />}
+                      </span>
+                      {isAssistant && !isStreamingNow && text && (
+                        <button
+                          onClick={() => (speakingId === m.id ? stopSpeaking() : speak(m.id, text))}
+                          className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground"
+                          title={speakingId === m.id ? "Stop reading aloud" : "Read aloud"}
+                        >
+                          {speakingId === m.id ? <VolumeX size={13} /> : <Volume2 size={13} />}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </motion.div>
@@ -331,6 +448,18 @@ export default function JaydenChat({ height = "h-[calc(100vh-220px)]" }: { heigh
         <motion.div whileTap={{ scale: 0.94 }}>
           <Button type="button" variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} title="Attach image">
             <ImagePlus size={16} />
+          </Button>
+        </motion.div>
+        <motion.div whileTap={{ scale: 0.94 }}>
+          <Button
+            type="button"
+            variant={listening ? "default" : "outline"}
+            size="icon"
+            onClick={toggleMic}
+            title={listening ? "Listening… click to stop" : "Speak your message"}
+            className={cn(listening && "animate-pulse")}
+          >
+            <Mic size={16} />
           </Button>
         </motion.div>
         <div className="relative flex-1">

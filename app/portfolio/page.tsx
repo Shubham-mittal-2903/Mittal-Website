@@ -203,6 +203,14 @@ export default function PortfolioPage() {
                       </span>
                     ))}
                   </div>
+                  {project.liveUrl && (
+                    <a
+                      href={project.liveUrl}
+                      className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-electric transition-colors hover:text-white"
+                    >
+                      Live Preview <ExternalLink size={14} />
+                    </a>
+                  )}
                 </div>
               </Reveal>
             ))}

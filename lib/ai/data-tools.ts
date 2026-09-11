@@ -182,3 +182,86 @@ export async function manageDatabaseTool(input: { model: string; operation: stri
   const result = await modelClient[operation](input.args ?? {});
   return JSON.stringify(result, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2);
 }
+
+// ---------- Jayden Memory ----------
+// Cross-conversation memory — distinct from manage_database's JaydenMemory access in that it
+// encodes the right default behavior (tier -> TTL, ranked recall) the same way mark_attendance
+// encodes attendance's recompute step. MEDIUM is the safe default (7-day TTL, no risk of stale
+// facts piling up forever); LONG is only for things Shubham explicitly wants kept permanently.
+const MEDIUM_TIER_TTL_DAYS = 7;
+
+type MemoryRow = { id: string; content: string; tier: string; category: string | null; createdAt: Date };
+
+// Structured versions -- shared by the Claude-tool wrappers below (which format a prose string,
+// the shape Claude's tool_result content expects) and app/api/memory/route.ts (which needs plain
+// JSON for a machine caller, e.g. jayden-voice or jayden-app on Shubham's own laptop). One brain,
+// two callers -- see app/api/memory/route.ts for why that route exists at all.
+export async function rememberFact(input: {
+  content: string;
+  tier?: "MEDIUM" | "LONG";
+  category?: string;
+  importance?: number;
+}): Promise<MemoryRow> {
+  const tier = input.tier ?? "MEDIUM";
+  const expiresAt = tier === "MEDIUM" ? new Date(Date.now() + MEDIUM_TIER_TTL_DAYS * 24 * 60 * 60 * 1000) : null;
+  return db.jaydenMemory.create({
+    data: {
+      content: input.content,
+      tier,
+      category: input.category,
+      importance: input.importance ?? 0.5,
+      expiresAt,
+    },
+  });
+}
+
+export async function recallMemories(query: string, topK = 5): Promise<MemoryRow[]> {
+  const now = new Date();
+
+  // Ranked full-text search via Postgres — plainto_tsquery handles multi-word queries and
+  // ts_rank orders by relevance, no separate embedding/index infra needed for this scale.
+  const rows = await db.$queryRaw<MemoryRow[]>`
+    SELECT id, content, tier, category, "createdAt"
+    FROM "JaydenMemory"
+    WHERE ("expiresAt" IS NULL OR "expiresAt" > ${now})
+      AND to_tsvector('english', content) @@ plainto_tsquery('english', ${query})
+    ORDER BY ts_rank(to_tsvector('english', content), plainto_tsquery('english', ${query})) DESC
+    LIMIT ${Math.min(topK, 20)}
+  `;
+
+  if (rows.length > 0) {
+    await db.jaydenMemory.updateMany({
+      where: { id: { in: rows.map((r) => r.id) } },
+      data: { lastAccessedAt: now, accessCount: { increment: 1 } },
+    });
+  }
+
+  return rows;
+}
+
+export async function listRecentMemories(limit = 20): Promise<MemoryRow[]> {
+  const now = new Date();
+  return db.jaydenMemory.findMany({
+    where: { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
+    orderBy: { createdAt: "desc" },
+    take: Math.min(limit, 50),
+    select: { id: true, content: true, tier: true, category: true, createdAt: true },
+  });
+}
+
+export async function rememberFactTool(input: {
+  content: string;
+  tier?: "MEDIUM" | "LONG";
+  category?: string;
+  importance?: number;
+}): Promise<string> {
+  const entry = await rememberFact(input);
+  const expiresNote = entry.tier === "MEDIUM" ? `, expires ${dateOnlyKey(new Date(entry.createdAt.getTime() + MEDIUM_TIER_TTL_DAYS * 24 * 60 * 60 * 1000))}` : "";
+  return `Remembered (${entry.tier.toLowerCase()}${expiresNote}): "${entry.content}"`;
+}
+
+export async function recallMemoryTool(input: { query: string; topK?: number }): Promise<string> {
+  const rows = await recallMemories(input.query, input.topK ?? 5);
+  if (rows.length === 0) return `No memories found matching "${input.query}".`;
+  return rows.map((r) => `- [${r.tier.toLowerCase()}${r.category ? `/${r.category}` : ""}] ${r.content} (${dateOnlyKey(r.createdAt)})`).join("\n");
+}
